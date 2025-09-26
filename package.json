@@ -1,6 +1,6 @@
 {
     "name": "ciphora",
-    "version": "1.2.6",
+    "version": "1.2.80",
     "type": "module",
     "description": "Ciphora - 安全密码管理器，支持MFA、Base64数据存储和加密备份",
     "main": "main.cjs",
@@ -36,7 +36,7 @@
         "electron",
         "cross-platform"
     ],
-    "author": "cuboart <cubo@binrc.com>",
+    "author": "loganchef <cubo@binrc.com>",
     "license": "MIT",
     "devDependencies": {
         "@tailwindcss/postcss": "^4.1.12",

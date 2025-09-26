@@ -29,7 +29,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/cuboart/Ciphora.git
+git clone https://github.com/loganchef/Ciphora.git
 cd Ciphora
 
 # 安装依赖
@@ -51,9 +51,9 @@ yarn electron:dev
 
 ## 联系我们
 
-- **组织**: [cuboart](https://github.com/cuboart)
+- **组织**: [loganchef](https://github.com/loganchef)
 - **邮箱**: [cubo@binrc.com](mailto:cubo@binrc.com)
-- **项目地址**: [https://github.com/cuboart/Ciphora](https://github.com/cuboart/Ciphora)
+- **项目地址**: [https://github.com/loganchef/Ciphora](https://github.com/loganchef/Ciphora)
 
 ## 许可证
 

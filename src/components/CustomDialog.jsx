@@ -44,7 +44,7 @@ const CustomDialog = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4" style={{ zIndex: 999999 }}>
             {/* 极轻量背景遮罩 */}
             <div
                 className="absolute inset-0 bg-gray-100/30 backdrop-blur-sm"
@@ -71,12 +71,12 @@ const CustomDialog = ({
 
                 {/* 内容 */}
                 <div className="p-6">
-                    <p className="text-gray-700 mb-4">
+                    <p className="text-gray-700 mb-4 select-text">
                         {message}
                     </p>
                     {detail && (
                         <div className="bg-gray-50/50 rounded-lg p-4 mb-6 border border-gray-100">
-                            <pre className="text-sm text-gray-600 whitespace-pre-wrap font-sans">
+                            <pre className="text-sm text-gray-600 whitespace-pre-wrap font-sans select-text">
                                 {detail}
                             </pre>
                         </div>

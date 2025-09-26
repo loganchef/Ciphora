@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import TOTPDisplay from './TOTPDisplay';
 import CopyButton from './CopyButton';
+import DataDisplayModal from './DataDisplayModal';
 import QRCode from 'qrcode';
 
 // --- SVG Icons ---
@@ -69,6 +70,12 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
     const [showQRCode, setShowQRCode] = useState(false);
+    const [dataDisplayModal, setDataDisplayModal] = useState({
+        isOpen: false,
+        title: '',
+        data: '',
+        type: 'text'
+    });
 
     React.useEffect(() => {
         const mountTimer = setTimeout(() => setShowConfetti(true), 100);
@@ -166,7 +173,7 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
     };
 
     return (
-        <div className={`relative w-full max-w-lg bg-white text-gray-900 rounded-2xl shadow-lg font-sans z-10 animate-in fade-in-0 zoom-in-95 duration-500 ${className}`}>
+        <div className={`relative w-full max-w-lg bg-white text-gray-900 rounded-2xl shadow-lg font-sans animate-in fade-in-0 zoom-in-95 duration-500 ${className}`}>
             {/* Card cut-out effect */}
             {/* <div className="absolute -left-4 top-1/2  w-8 h-8 rounded-full bg-[#F3F8FE]" />
             <div className="absolute -right-4 top-1/2  w-8 h-8 rounded-full bg-[#F3F8FE]" /> */}
@@ -179,7 +186,7 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
             </div>
 
             {/* Header */}
-            <div className="pt-4 pb-6 px-6 text-gray-800 rounded-t-2xl relative z-10">
+            <div className="pt-4 pb-6 px-6 text-gray-800 rounded-t-2xl relative">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-gray-100 rounded-full">
@@ -285,21 +292,21 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
                             <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl font-mono text-sm border border-gray-200 max-h-32 overflow-y-auto">
                                 <pre className="whitespace-pre-wrap break-all">{password.base64Data}</pre>
                             </div>
-                            <CopyButton text={password.base64Data} label="复制" />
+                            <CopyButton text={password.base64Data} label="复制原始" />
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => {
-                                    try {
-                                        const decoded = atob(password.base64Data);
-                                        alert(`解码结果:\n${decoded}`);
-                                    } catch (error) {
-                                        alert('Base64解码失败');
-                                    }
+                                    setDataDisplayModal({
+                                        isOpen: true,
+                                        title: 'Base64完整显示',
+                                        data: password.base64Data,
+                                        type: 'base64'
+                                    });
                                 }}
-                                className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-sm hover:bg-blue-200 transition-colors"
+                                className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
                             >
-                                解码显示
+                                弹窗显示
                             </button>
                         </div>
                     </div>
@@ -314,35 +321,23 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl font-mono text-sm border border-gray-200 max-h-32 overflow-y-auto">
-                                <pre className="whitespace-pre-wrap break-words">
-                                    {(() => {
-                                        try {
-                                            // 尝试格式化 JSON 数据
-                                            const parsed = JSON.parse(password.jsonData);
-                                            return JSON.stringify(parsed, null, 2);
-                                        } catch (error) {
-                                            // 如果不是有效的 JSON，直接显示原始数据
-                                            return password.jsonData;
-                                        }
-                                    })()}
-                                </pre>
+                                <pre className="whitespace-pre-wrap break-words">{password.jsonData}</pre>
                             </div>
                             <CopyButton text={password.jsonData} label="复制" />
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => {
-                                    try {
-                                        const parsed = JSON.parse(password.jsonData);
-                                        const formatted = JSON.stringify(parsed, null, 2);
-                                        alert(`格式化后的JSON:\n${formatted}`);
-                                    } catch (error) {
-                                        alert('JSON格式无效，无法格式化');
-                                    }
+                                    setDataDisplayModal({
+                                        isOpen: true,
+                                        title: 'JSON完整显示',
+                                        data: password.jsonData,
+                                        type: 'json'
+                                    });
                                 }}
-                                className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-sm hover:bg-blue-200 transition-colors"
+                                className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
                             >
-                                格式化显示
+                                弹窗显示
                             </button>
                         </div>
                     </div>
@@ -365,7 +360,7 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
                                 二维码
                             </button>
                         </div>
-                        <TOTPDisplay 
+                        <TOTPDisplay
                             secret={password.secret}
                             issuer={password.website || 'Ciphora'}
                             accountName={password.username || 'Account'}
@@ -430,6 +425,15 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
                     )
                 }
             </div>
+
+            {/* 数据显示模态框 */}
+            <DataDisplayModal
+                isOpen={dataDisplayModal.isOpen}
+                onClose={() => setDataDisplayModal(prev => ({ ...prev, isOpen: false }))}
+                title={dataDisplayModal.title}
+                data={dataDisplayModal.data}
+                type={dataDisplayModal.type}
+            />
         </div>
     );
 };

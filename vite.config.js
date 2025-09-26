@@ -22,9 +22,17 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
       },
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          icons: ['@heroicons/react']
+        manualChunks: (id) => {
+          // 将node_modules中的包分组
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor';
+            }
+            if (id.includes('@heroicons')) {
+              return 'icons';
+            }
+            return 'vendor';
+          }
         }
       },
     },

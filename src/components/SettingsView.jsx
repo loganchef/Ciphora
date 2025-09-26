@@ -546,13 +546,13 @@ const SettingsView = ({ onBack, onLogout }) => {
                     </p>
                     <div className="text-sm text-gray-500">
                         <a
-                            href="https://github.com/cuboart/Ciphora"
+                            href="https://github.com/loganchef/Ciphora"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-sm text-blue-600 hover:text-blue-800 underline"
                         >
-                            https://github.com/cuboart/Ciphora
-                        </a> 版本: v1.2.6 | 开源协议: MIT
+                            https://github.com/loganchef/Ciphora
+                        </a> 版本: v1.2.80 | 开源协议: MIT
                     </div>
                 </div>
 
