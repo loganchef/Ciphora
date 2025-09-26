@@ -4,8 +4,8 @@
   <img src="./res/logo.png" alt="Ciphora Logo" width="120" height="120">
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/cuboart/Ciphora)
-  [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/cuboart/Ciphora)
+  [![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/loganchef/Ciphora)
+  [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/loganchef/Ciphora)
 </div>
 
 ## 📖 项目简介
@@ -22,7 +22,7 @@ Ciphora 是一个开源、安全、跨平台的密码管理器，基于 Electron
 
 | 🏢 开发组织 | 👨‍💻 开发人员 | 📧 联系邮箱 |
 |-------------|---------------|-------------|
-| [binrchq](https://github.com/binrchq) | [cuboart](https://github.com/cuboart) | [cubo@binrc.com](mailto:cubo@binrc.com) |
+| [binrchq](https://github.com/binrchq) | [loganchef](https://github.com/loganchef) | [cubo@binrc.com](mailto:cubo@binrc.com) |
 
 ### 🖼️ 界面展示
 
@@ -75,7 +75,7 @@ Ciphora 是一个开源、安全、跨平台的密码管理器，基于 Electron
 
 #### 方法一：下载预编译版本
 
-1. 访问 [Releases](https://github.com/cuboart/Ciphora/releases) 页面
+1. 访问 [Releases](https://github.com/loganchef/Ciphora/releases) 页面
 2. 下载适合您操作系统的安装包
 3. 运行安装程序
 
@@ -83,7 +83,7 @@ Ciphora 是一个开源、安全、跨平台的密码管理器，基于 Electron
 
 ```bash
 # 克隆仓库
-git clone https://github.com/cuboart/Ciphora.git
+git clone https://github.com/loganchef/Ciphora.git
 cd Ciphora
 
 # 安装依赖
@@ -302,8 +302,8 @@ yarn lint
 
 ## 📞 支持与反馈
 
-- 🐛 **Bug 报告**：[Issues](https://github.com/cuboart/Ciphora/issues)
-- 💡 **功能建议**：[Discussions](https://github.com/cuboart/Ciphora/discussions)
+- 🐛 **Bug 报告**：[Issues](https://github.com/loganchef/Ciphora/issues)
+- 💡 **功能建议**：[Discussions](https://github.com/loganchef/Ciphora/discussions)
 - 📧 **联系邮箱**：[cubo@binrc.com](mailto:cubo@binrc.com)
 
 ## 💝 支持项目
@@ -331,7 +331,7 @@ yarn lint
 
 <div align="center">
 
-**Made with ❤️ by [cuboart](https://github.com/cuboart)**
+**Made with ❤️ by [loganchef](https://github.com/loganchef)**
 
 📧 **Contact**: [cubo@binrc.com](mailto:cubo@binrc.com)
 
