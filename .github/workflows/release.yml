@@ -132,19 +132,47 @@ jobs:
       with:
         path: artifacts
 
-    - name: Generate release notes
-      id: release_notes
-      run: |
-        echo "## 🎉 Ciphora ${{ github.ref_name }}" > release_notes.md
-        echo "" >> release_notes.md
-        echo "### 📝 Commit 信息" >> release_notes.md
-        echo "" >> release_notes.md
-        git log --pretty=format:"- %s (%h)" -10 >> release_notes.md
-        echo "" >> release_notes.md
-        echo "" >> release_notes.md
-        echo "### 📥 下载" >> release_notes.md
-        echo "请根据您的系统选择对应的安装包下载" >> release_notes.md
-        cat release_notes.md
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          # 获取最新的 commit 信息（标题和详细内容）
+          COMMIT_TITLE=$(git log -1 --pretty=format:"%s")
+          COMMIT_BODY=$(git log -1 --pretty=format:"%b")
+          
+          echo "## 🎉 Ciphora ${{ github.ref_name }}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "### ✨ 更新内容" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "**${COMMIT_TITLE}**" >> release_notes.md
+          echo "" >> release_notes.md
+          
+          # 如果 commit body 不为空，添加详细信息
+          if [ ! -z "$COMMIT_BODY" ]; then
+            echo "$COMMIT_BODY" | while IFS= read -r line; do
+              if [ ! -z "$line" ]; then
+                echo "$line" >> release_notes.md
+              fi
+            done
+            echo "" >> release_notes.md
+          fi
+          
+          echo "" >> release_notes.md
+          echo "### 📥 下载说明" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "请根据您的系统选择对应的安装包：" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "- **Windows**: 下载 \`.exe\` 文件（x64 为 64位，ia32 为 32位）" >> release_notes.md
+          echo "- **macOS**: 下载 \`.dmg\` 文件（arm64 为 Apple Silicon，x64 为 Intel）" >> release_notes.md
+          echo "- **Linux**: 下载 \`.AppImage\` 文件" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 📋 最近提交" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "\`\`\`" >> release_notes.md
+          git log --pretty=format:"%h - %s" -5 >> release_notes.md
+          echo "" >> release_notes.md
+          echo "\`\`\`" >> release_notes.md
+          
+          cat release_notes.md
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
