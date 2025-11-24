@@ -69,7 +69,7 @@
         "appId": "com.ciphora.password-manager",
         "productName": "Ciphora",
         "directories": {
-            "output": "dist"
+            "output": "release"
         },
         "icon": "res/logo.png",
         "files": [
