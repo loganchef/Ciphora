@@ -3,7 +3,7 @@ name: Release Build
 on:
   push:
     tags:
-      - "v*"
+    - "v*"
 
 permissions:
   contents: write
@@ -16,105 +16,105 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: windows-latest
-            platform: win
-            arch: x64
-            target: nsis
-          - os: windows-latest
-            platform: win
-            arch: ia32
-            target: nsis
-          - os: ubuntu-latest
-            platform: linux
-            arch: x64
-            target: AppImage
-          - os: macos-latest
-            platform: mac
-            arch: x64
-            target: dmg
-          - os: macos-latest
-            platform: mac
-            arch: arm64
-            target: dmg
+        - os: windows-latest
+          platform: win
+          arch: x64
+          target: nsis
+        - os: windows-latest
+          platform: win
+          arch: ia32
+          target: nsis
+        - os: ubuntu-latest
+          platform: linux
+          arch: x64
+          target: AppImage
+        - os: macos-latest
+          platform: mac
+          arch: x64
+          target: dmg
+        - os: macos-latest
+          platform: mac
+          arch: arm64
+          target: dmg
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "yarn"
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+        cache: "yarn"
 
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
 
-      - name: Build frontend (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          # 从 Git tag 获取版本号
-          VERSION=${GITHUB_REF#refs/tags/}
-          VERSION=${VERSION#v}
-          echo "Building version: $VERSION"
-          VERSION=$VERSION yarn build:prod
+    - name: Build frontend (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        # 从 Git tag 获取版本号
+        VERSION=${GITHUB_REF#refs/tags/}
+        VERSION=${VERSION#v}
+        echo "Building version: $VERSION"
+        VERSION=$VERSION yarn build:prod
 
-      - name: Build frontend (Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          # 从 Git tag 获取版本号
-          $VERSION = "${{ github.ref }}" -replace "refs/tags/", "" -replace "^v", ""
-          Write-Host "Building version: $VERSION"
-          $env:VERSION = $VERSION; yarn build:prod
+    - name: Build frontend (Windows)
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: |
+        # 从 Git tag 获取版本号
+        $VERSION = "${{ github.ref }}" -replace "refs/tags/", "" -replace "^v", ""
+        Write-Host "Building version: $VERSION"
+        $env:VERSION = $VERSION; yarn build:prod
 
-      - name: Fix app-builder permissions
-        if: matrix.platform == 'linux'
-        run: |
-          chmod +x node_modules/app-builder-bin/linux/x64/app-builder || true
-          chmod +x node_modules/app-builder-bin/linux/ia32/app-builder || true
+    - name: Fix app-builder permissions
+      if: matrix.platform == 'linux'
+      run: |
+        chmod +x node_modules/app-builder-bin/linux/x64/app-builder || true
+        chmod +x node_modules/app-builder-bin/linux/ia32/app-builder || true
 
-      - name: Build Electron app (Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          if ("${{ matrix.platform }}" -eq "win") {
-            yarn electron-builder --win --${{ matrix.arch }} --publish=never
-          }
-        env:
-          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
-          ELECTRON_BUILDER_CACHE: /tmp/electron-builder-cache
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build Electron app (Windows)
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: |
+        if ("${{ matrix.platform }}" -eq "win") {
+          yarn electron-builder --win --${{ matrix.arch }} --publish=never
+        }
+      env:
+        ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
+        ELECTRON_BUILDER_CACHE: /tmp/electron-builder-cache
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Electron app (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          if [ "${{ matrix.platform }}" = "mac" ]; then
-            yarn electron-builder --mac --${{ matrix.arch }} --publish=never
-          elif [ "${{ matrix.platform }}" = "linux" ]; then
-            yarn electron-builder --linux --${{ matrix.arch }} --publish=never
-          fi
-        env:
-          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
-          ELECTRON_BUILDER_CACHE: /tmp/electron-builder-cache
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build Electron app (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        if [ "${{ matrix.platform }}" = "mac" ]; then
+          yarn electron-builder --mac --${{ matrix.arch }} --publish=never
+        elif [ "${{ matrix.platform }}" = "linux" ]; then
+          yarn electron-builder --linux --${{ matrix.arch }} --publish=never
+        fi
+      env:
+        ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
+        ELECTRON_BUILDER_CACHE: /tmp/electron-builder-cache
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.target }}-${{ github.ref_name }}-${{ github.run_number }}
-          path: |
-            release/*.exe
-            release/*.dmg
-            release/*.AppImage
-            release/*.deb
-            release/*.rpm
-            release/*.snap
-            release/*.zip
-            release/*.tar.gz
-          retention-days: 30
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.target }}-${{ github.ref_name }}-${{ github.run_number }}
+        path: |
+          release/*.exe
+          release/*.dmg
+          release/*.AppImage
+          release/*.deb
+          release/*.rpm
+          release/*.snap
+          release/*.zip
+          release/*.tar.gz
+        retention-days: 30
 
   create-release:
     needs: build
@@ -124,21 +124,35 @@ jobs:
       packages: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            artifacts/**/*
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        echo "## 🎉 Ciphora ${{ github.ref_name }}" > release_notes.md
+        echo "" >> release_notes.md
+        echo "### 📝 Commit 信息" >> release_notes.md
+        echo "" >> release_notes.md
+        git log --pretty=format:"- %s (%h)" -10 >> release_notes.md
+        echo "" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "### 📥 下载" >> release_notes.md
+        echo "请根据您的系统选择对应的安装包下载" >> release_notes.md
+        cat release_notes.md
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          artifacts/**/*
+        draft: false
+        prerelease: false
+        body_path: release_notes.md
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

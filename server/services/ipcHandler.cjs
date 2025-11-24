@@ -1,4 +1,4 @@
-const { ipcMain, dialog } = require('electron');
+const { ipcMain, dialog, shell } = require('electron');
 const AppStateManager = require('./appState.cjs');
 const AuthService = require('./auth.cjs');
 const PasswordManagerService = require('./passwordManager.cjs');
@@ -460,6 +460,17 @@ class IPCHandler {
             } catch (error) {
                 console.error('写入文件失败:', error);
                 return { success: false, message: '写入文件失败: ' + error.message };
+            }
+        });
+
+        ipcMain.handle('open-url', async (event, url) => {
+            try {
+                await this.ensureInitialized();
+                await shell.openExternal(url);
+                return { success: true };
+            } catch (error) {
+                console.error('打开URL失败:', error);
+                return { success: false, message: '打开URL失败: ' + error.message };
             }
         });
     }

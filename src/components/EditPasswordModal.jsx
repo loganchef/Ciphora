@@ -22,6 +22,9 @@ const EditPasswordModal = ({ password, onClose, onSave }) => {
     const [formData, setFormData] = useState({
         type: 'password',
         website: '',
+        url: '',
+        urlSuffix: '',
+        showUrl: true,
         username: '',
         password: '',
         secret: '',
@@ -119,6 +122,9 @@ const EditPasswordModal = ({ password, onClose, onSave }) => {
             setFormData({
                 type: password.type || 'password',
                 website: password.website || '',
+                url: password.url || '',
+                urlSuffix: password.urlSuffix || '',
+                showUrl: password.showUrl !== undefined ? password.showUrl : true,
                 username: password.username || '',
                 password: password.password || '',
                 secret: password.secret || '',
@@ -288,6 +294,34 @@ const EditPasswordModal = ({ password, onClose, onSave }) => {
         return password;
     };
 
+    const extractUrlParts = (url) => {
+        try {
+            const commonSuffixes = ['/login', '/signin', '/auth', '/account', '/user/login'];
+            let baseUrl = url.trim();
+            let suffix = '';
+
+            for (const commonSuffix of commonSuffixes) {
+                if (baseUrl.toLowerCase().endsWith(commonSuffix.toLowerCase())) {
+                    suffix = baseUrl.slice(-commonSuffix.length);
+                    baseUrl = baseUrl.slice(0, -commonSuffix.length);
+                    break;
+                }
+            }
+
+            if (!suffix) {
+                const urlObj = new URL(baseUrl);
+                if (urlObj.pathname && urlObj.pathname !== '/') {
+                    suffix = urlObj.pathname + urlObj.search + urlObj.hash;
+                    baseUrl = urlObj.origin;
+                }
+            }
+
+            return { baseUrl, suffix };
+        } catch (error) {
+            return { baseUrl: url.trim(), suffix: '' };
+        }
+    };
+
     if (!password) return null;
 
     return (
@@ -334,7 +368,7 @@ const EditPasswordModal = ({ password, onClose, onSave }) => {
                     <div className="space-y-2">
                         <Label className="flex items-center gap-2">
                             <GlobeAltIcon className="w-4 h-4" />
-                            备注信息
+                            网站/应用名称
                         </Label>
                         <input
                             type="text"
@@ -345,6 +379,73 @@ const EditPasswordModal = ({ password, onClose, onSave }) => {
                             required
                         />
                     </div>
+
+                    {/* URL Field */}
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                            <GlobeAltIcon className="w-4 h-4" />
+                            网址 (可选)
+                        </Label>
+                        <input
+                            type="text"
+                            value={formData.url}
+                            onChange={(e) => {
+                                handleInputChange('url', e.target.value);
+                                if (e.target.value && !formData.url) {
+                                    handleInputChange('showUrl', true);
+                                }
+                            }}
+                            onPaste={(e) => {
+                                const pastedText = e.clipboardData.getData('text');
+                                if (pastedText) {
+                                    e.preventDefault();
+                                    const { baseUrl, suffix } = extractUrlParts(pastedText);
+                                    handleInputChange('url', baseUrl);
+                                    if (suffix) {
+                                        handleInputChange('urlSuffix', suffix);
+                                    }
+                                    if (!formData.url) {
+                                        handleInputChange('showUrl', true);
+                                    }
+                                }
+                            }}
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:border-gray-400 transition-all duration-200"
+                            placeholder="例如: https://www.example.com"
+                        />
+                    </div>
+
+                    {/* URL Suffix */}
+                    {formData.url && (
+                        <div className="space-y-2">
+                            <Label className="flex items-center gap-2">
+                                <GlobeAltIcon className="w-4 h-4" />
+                                登录后缀 (可选)
+                            </Label>
+                            <input
+                                type="text"
+                                value={formData.urlSuffix}
+                                onChange={(e) => handleInputChange('urlSuffix', e.target.value)}
+                                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:border-gray-400 transition-all duration-200"
+                                placeholder="例如: /login 或 /auth"
+                            />
+                        </div>
+                    )}
+
+                    {/* Show URL Toggle */}
+                    {formData.url && (
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                id="showUrl"
+                                checked={formData.showUrl}
+                                onChange={(e) => handleInputChange('showUrl', e.target.checked)}
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <Label htmlFor="showUrl" className="text-sm cursor-pointer">
+                                在卡片上显示网址
+                            </Label>
+                        </div>
+                    )}
 
                     {formData.type !== 'mfa' && (
                         <div className="space-y-2">

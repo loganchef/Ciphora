@@ -22,6 +22,9 @@ const AddPasswordModal = ({ onClose, onSave }) => {
     const [formData, setFormData] = useState({
         type: 'password',
         website: '',
+        url: '',
+        urlSuffix: '',
+        showUrl: true,
         username: '',
         password: '',
         secret: '',
@@ -29,7 +32,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
         stringData: '',
         jsonData: '',
         notes: '',
-        description: '' // 添加描述字段，用于显示
+        description: ''
     });
     const [showPassword, setShowPassword] = useState(false);
     const [passwordStrength, setPasswordStrength] = useState(null);
@@ -259,6 +262,9 @@ const AddPasswordModal = ({ onClose, onSave }) => {
         // 根据类型准备数据
         const passwordData = {
             website: formData.website,
+            url: formData.url,
+            urlSuffix: formData.urlSuffix,
+            showUrl: formData.showUrl,
             notes: formData.notes,
             type: formData.type
         };
@@ -267,22 +273,22 @@ const AddPasswordModal = ({ onClose, onSave }) => {
         if (formData.type === 'password') {
             passwordData.username = formData.username;
             passwordData.password = formData.password;
-            passwordData.description = formData.website; // 使用备注信息作为描述
+            passwordData.description = formData.website;
         } else if (formData.type === 'mfa') {
             passwordData.secret = formData.secret;
-            passwordData.description = formData.website; // 使用备注信息作为描述
+            passwordData.description = formData.website;
         } else if (formData.type === 'base64') {
             passwordData.username = formData.username;
             passwordData.base64Data = formData.base64Data;
-            passwordData.description = formData.website; // 使用备注信息作为描述
+            passwordData.description = formData.website;
         } else if (formData.type === 'string') {
             passwordData.username = formData.username;
             passwordData.stringData = formData.stringData;
-            passwordData.description = formData.website; // 使用备注信息作为描述
+            passwordData.description = formData.website;
         } else if (formData.type === 'json') {
             passwordData.username = formData.username;
             passwordData.jsonData = formData.jsonData;
-            passwordData.description = formData.website; // 使用备注信息作为描述
+            passwordData.description = formData.website;
         }
 
         onSave(passwordData);
@@ -339,6 +345,34 @@ const AddPasswordModal = ({ onClose, onSave }) => {
             password += charset.charAt(Math.floor(Math.random() * charset.length));
         }
         return password;
+    };
+
+    const extractUrlParts = (url) => {
+        try {
+            const commonSuffixes = ['/login', '/signin', '/auth', '/account', '/user/login'];
+            let baseUrl = url.trim();
+            let suffix = '';
+
+            for (const commonSuffix of commonSuffixes) {
+                if (baseUrl.toLowerCase().endsWith(commonSuffix.toLowerCase())) {
+                    suffix = baseUrl.slice(-commonSuffix.length);
+                    baseUrl = baseUrl.slice(0, -commonSuffix.length);
+                    break;
+                }
+            }
+
+            if (!suffix) {
+                const urlObj = new URL(baseUrl);
+                if (urlObj.pathname && urlObj.pathname !== '/') {
+                    suffix = urlObj.pathname + urlObj.search + urlObj.hash;
+                    baseUrl = urlObj.origin;
+                }
+            }
+
+            return { baseUrl, suffix };
+        } catch (error) {
+            return { baseUrl: url.trim(), suffix: '' };
+        }
     };
 
     return (
@@ -398,6 +432,71 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                             required
                         />
                     </div>
+
+                    {/* URL Field */}
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                            <GlobeAltIcon className="w-4 h-4" />
+                            网址 (可选)
+                        </Label>
+                        <input
+                            type="text"
+                            value={formData.url}
+                            onChange={(e) => {
+                                handleInputChange('url', e.target.value);
+                                if (e.target.value) {
+                                    handleInputChange('showUrl', true);
+                                }
+                            }}
+                            onPaste={(e) => {
+                                const pastedText = e.clipboardData.getData('text');
+                                if (pastedText) {
+                                    e.preventDefault();
+                                    const { baseUrl, suffix } = extractUrlParts(pastedText);
+                                    handleInputChange('url', baseUrl);
+                                    if (suffix) {
+                                        handleInputChange('urlSuffix', suffix);
+                                    }
+                                    handleInputChange('showUrl', true);
+                                }
+                            }}
+                            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:border-gray-400 transition-all duration-200"
+                            placeholder="例如: https://www.example.com"
+                        />
+                    </div>
+
+                    {/* URL Suffix */}
+                    {formData.url && (
+                        <div className="space-y-2">
+                            <Label className="flex items-center gap-2">
+                                <GlobeAltIcon className="w-4 h-4" />
+                                登录后缀 (可选)
+                            </Label>
+                            <input
+                                type="text"
+                                value={formData.urlSuffix}
+                                onChange={(e) => handleInputChange('urlSuffix', e.target.value)}
+                                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:border-gray-400 transition-all duration-200"
+                                placeholder="例如: /login 或 /auth"
+                            />
+                        </div>
+                    )}
+
+                    {/* Show URL Toggle */}
+                    {formData.url && (
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                id="showUrl"
+                                checked={formData.showUrl}
+                                onChange={(e) => handleInputChange('showUrl', e.target.checked)}
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <Label htmlFor="showUrl" className="text-sm cursor-pointer">
+                                在卡片上显示网址
+                            </Label>
+                        </div>
+                    )}
 
                     {/* Username/Identifier */}
                     {formData.type !== 'mfa' && (

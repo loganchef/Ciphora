@@ -91,6 +91,36 @@ const PasswordItem = ({ password, onEdit }) => {
 
             <div className="p-6">
                 <div className="space-y-4">
+                    {/* URL section - only show if url exists and showUrl is true */}
+                    {password.url && password.showUrl && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-2">网址</label>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-50 px-3 py-2 rounded-xl text-sm truncate">
+                                    {password.url}
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        const fullUrl = password.url + (password.urlSuffix || '');
+                                        if (window.api && window.api.openUrl) {
+                                            await window.api.openUrl(fullUrl);
+                                        } else {
+                                            window.open(fullUrl, '_blank');
+                                        }
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl text-sm font-medium transition-colors whitespace-nowrap"
+                                >
+                                    <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                    打开
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {password.type !== 'mfa' && password.username && password.username.trim() && (
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-2">用户名</label>

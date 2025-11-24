@@ -12,7 +12,8 @@ import {
     DocumentTextIcon,
     GlobeAltIcon,
     QrCodeIcon,
-    XMarkIcon
+    XMarkIcon,
+    ArrowTopRightOnSquareIcon
 } from '@heroicons/react/24/outline';
 import TOTPDisplay from './TOTPDisplay';
 import CopyButton from './CopyButton';
@@ -220,6 +221,35 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
             {/* Content */}
             <div className="px-6 pb-6 space-y-4">
                 <DashedLine />
+
+                {/* URL section - only show if url exists and showUrl is true */}
+                {password.url && password.showUrl && (
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <GlobeAltIcon className="w-4 h-4" />
+                            <span>网址</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl text-sm border border-gray-200 truncate">
+                                {password.url}
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    const fullUrl = password.url + (password.urlSuffix || '');
+                                    if (window.api && window.api.openUrl) {
+                                        await window.api.openUrl(fullUrl);
+                                    } else {
+                                        window.open(fullUrl, '_blank');
+                                    }
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl text-sm font-medium transition-colors whitespace-nowrap"
+                            >
+                                <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                                打开
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Username section - only show if username exists */}
                 {password.username && password.username.trim() && (

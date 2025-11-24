@@ -1,6 +1,6 @@
 {
     "name": "ciphora",
-    "version": "1.2.80",
+    "version": "1.3.0",
     "type": "module",
     "description": "Ciphora - 安全密码管理器，支持MFA、Base64数据存储和加密备份",
     "main": "main.cjs",
@@ -69,7 +69,7 @@
         "appId": "com.ciphora.password-manager",
         "productName": "Ciphora",
         "directories": {
-            "output": "release"
+            "output": "dist"
         },
         "icon": "res/logo.png",
         "files": [

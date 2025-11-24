@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld('api', {
     saveFile: (filters) => ipcRenderer.invoke('save-file', filters),
     readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
     writeFile: (filePath, content) => ipcRenderer.invoke('write-file', filePath, content),
+    openUrl: (url) => ipcRenderer.invoke('open-url', url),
 
     // ==================== 设置相关 ====================
     getSettings: () => ipcRenderer.invoke('get-settings'),
