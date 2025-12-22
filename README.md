@@ -321,6 +321,8 @@ yarn lint
 
 ### 支付方式
 
+[![Sponsor loganchef](https://img.shields.io/badge/-Sponsor-ea4aaa?style=flat&logo=github&logoColor=white)](https://github.com/sponsors/loganchef)
+
 | 微信支付 | 支付宝 |
 |----------|--------|
 | <img src="./res/wechatpay.png" alt="微信支付" width="150" height="170"><br>**微信支付** | <img src="./res/alipay.png" alt="支付宝" width="150" height="170"><br>**支付宝** |
