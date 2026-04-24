@@ -8,6 +8,7 @@ use crate::{
         AppState,
         BackupFile,
         BackupResponse,
+        Group,
         ImportAnalysisResponse,
         ImportProcessResult,
         ImportResolution,
@@ -18,6 +19,7 @@ use crate::{
     },
     service::{
         auth,
+        group as group_service,
         import_export,
         mfa,
         password as password_service,
@@ -349,6 +351,61 @@ pub async fn get_app_info() -> Result<serde_json::Value, String> {
         "version": env!("CARGO_PKG_VERSION"),
         "name": env!("CARGO_PKG_NAME"),
     }))
+}
+
+// ==================== 分组相关 ====================
+
+/// 用途: 获取所有分组; 输入: AppHandle; 输出: 分组列表; 必要性: 前端展示分组。
+#[tauri::command]
+pub async fn get_groups(app: tauri::AppHandle) -> Result<Vec<Group>, String> {
+    group_service::get_groups(app).await
+}
+
+/// 用途: 新增分组; 输入: 分组属性; 输出: 新分组; 必要性: 用户创建分组。
+#[tauri::command]
+pub async fn add_group(
+    app: tauri::AppHandle,
+    name: String,
+    color: String,
+    icon: String,
+) -> Result<Group, String> {
+    group_service::add_group(app, name, color, icon).await
+}
+
+/// 用途: 更新分组; 输入: ID 与新属性; 输出: 更新后分组; 必要性: 用户编辑分组。
+#[tauri::command]
+pub async fn update_group(
+    app: tauri::AppHandle,
+    id: String,
+    name: String,
+    color: String,
+    icon: String,
+) -> Result<Group, String> {
+    group_service::update_group(app, id, name, color, icon).await
+}
+
+/// 用途: 删除分组; 输入: ID; 输出: (); 必要性: 用户删除分组，密码归入未分组。
+#[tauri::command]
+pub async fn delete_group(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    group_service::delete_group(app, id).await
+}
+
+/// 用途: 重新排序分组; 输入: ID 有序列表; 输出: (); 必要性: 支持拖拽排序。
+#[tauri::command]
+pub async fn reorder_groups(app: tauri::AppHandle, group_ids: Vec<String>) -> Result<(), String> {
+    group_service::reorder_groups(app, group_ids).await
+}
+
+/// 用途: 批量移动密码到分组; 输入: 密码 ID 列表、目标分组 ID; 输出: (); 必要性: 批量操作。
+#[tauri::command]
+pub async fn move_passwords_to_group(
+    password_ids: Vec<String>,
+    group_id: Option<String>,
+    master_password: String,
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    password_service::move_passwords_to_group(password_ids, group_id, master_password, app, state).await
 }
 
 

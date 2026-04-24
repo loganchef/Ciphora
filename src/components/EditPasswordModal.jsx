@@ -16,6 +16,7 @@ import {
 import TOTPDisplay from './TOTPDisplay';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { useGroups } from '../hooks/useGroups';
 import jsQR from 'jsqr';
 
 const EditPasswordModal = ({ password, onClose, onSave }) => {
@@ -31,10 +32,12 @@ const EditPasswordModal = ({ password, onClose, onSave }) => {
         base64Data: '',
         stringData: '',
         jsonData: '',
-        notes: ''
+        notes: '',
+        groupId: null
     });
     const [showPassword, setShowPassword] = useState(false);
     const [passwordStrength, setPasswordStrength] = useState(null);
+    const { groups } = useGroups();
     const fileInputRef = React.useRef(null);
 
     // 前端二维码解析函数
@@ -131,7 +134,8 @@ const EditPasswordModal = ({ password, onClose, onSave }) => {
                 base64Data: password.base64Data || '',
                 stringData: password.stringData || '',
                 jsonData: password.jsonData || '',
-                notes: password.notes || ''
+                notes: password.notes || '',
+                groupId: password.groupId || null
             });
         }
     }, [password]);
@@ -632,6 +636,30 @@ const EditPasswordModal = ({ password, onClose, onSave }) => {
                             placeholder={getPlaceholder('notes')}
                             rows={3}
                         />
+                    </div>
+
+                    {/* Group Selection */}
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                            <TagIcon className="w-4 h-4" />
+                            分组 (可选)
+                        </Label>
+                        <Select
+                            value={formData.groupId || 'ungrouped'}
+                            onValueChange={(value) => handleInputChange('groupId', value === 'ungrouped' ? null : value)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="选择分组" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ungrouped">📂 未分组</SelectItem>
+                                {groups.map(group => (
+                                    <SelectItem key={group.id} value={group.id}>
+                                        <span style={{ color: group.color }}>{group.icon} {group.name}</span>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="flex gap-2 pt-2">

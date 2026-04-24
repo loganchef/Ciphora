@@ -3,4 +3,5 @@ pub const PASSWORD_FILE: &str = "passwords.enc";
 pub const MASTER_KEY_FILE: &str = "master.key";
 pub const SETTINGS_FILE: &str = "settings.json";
 pub const DEVICE_ID_FILE: &str = "device.id";
+pub const GROUPS_FILE: &str = "groups.json";
 

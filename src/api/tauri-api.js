@@ -498,6 +498,65 @@ export const tauriAPI = {
     return { success: false, message: '功能开发中' };
   },
 
+  // ==================== 分组管理 ====================
+  async getGroups() {
+    try {
+      return await invoke('get_groups');
+    } catch (error) {
+      console.error('获取分组失败:', error);
+      return [];
+    }
+  },
+
+  async addGroup(name, color, icon) {
+    try {
+      return await invoke('add_group', { name, color, icon });
+    } catch (error) {
+      console.error('添加分组失败:', error);
+      throw error;
+    }
+  },
+
+  async updateGroup(id, name, color, icon) {
+    try {
+      return await invoke('update_group', { id, name, color, icon });
+    } catch (error) {
+      console.error('更新分组失败:', error);
+      throw error;
+    }
+  },
+
+  async deleteGroup(id) {
+    try {
+      await invoke('delete_group', { id });
+      return { success: true };
+    } catch (error) {
+      console.error('删除分组失败:', error);
+      throw error;
+    }
+  },
+
+  async reorderGroups(groupIds) {
+    try {
+      await invoke('reorder_groups', { groupIds });
+      return { success: true };
+    } catch (error) {
+      console.error('重排分组失败:', error);
+      throw error;
+    }
+  },
+
+  async movePasswordsToGroup(passwordIds, groupId) {
+    try {
+      const masterPassword = getMasterPassword();
+      await invoke('move_passwords_to_group', { passwordIds, groupId, masterPassword });
+      return { success: true };
+    } catch (error) {
+      console.error('移动密码失败:', error);
+      throw error;
+    }
+  },
+
   async resetAllData(confirmText) {
     if (confirmText !== 'RESET ALL DATA') {
       return { success: false, message: '确认文本不匹配' };

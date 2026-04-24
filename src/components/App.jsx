@@ -718,6 +718,7 @@ const App = () => {
                         onAddPassword={openAddModal}
                         onEditPassword={openEditModal}
                         onDeletePassword={handleDeletePassword}
+                        onRefresh={loadPasswords}
                         hideSensitiveButtons={settings?.ui?.hideSensitiveButtons || false}
                     />
                     {isMobile && (

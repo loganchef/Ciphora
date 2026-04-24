@@ -315,6 +315,34 @@ pub async fn get_encrypted_vault(
     }))
 }
 
+/// 用途: 将指定密码批量移动到某分组; 输入: ID 列表、分组 ID（null=取消分组）、主密码; 输出: (); 必要性: 支持批量操作。
+pub async fn move_passwords_to_group(
+    password_ids: Vec<String>,
+    group_id: Option<String>,
+    master_password: String,
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    ensure_authenticated(&state)?;
+
+    let mut list = load_passwords(master_password.clone(), app.clone(), state.clone()).await?;
+
+    for entry in list.iter_mut() {
+        if let Some(obj) = entry.as_object_mut() {
+            if let Some(id) = obj.get("id").and_then(Value::as_str) {
+                if password_ids.contains(&id.to_string()) {
+                    match &group_id {
+                        Some(gid) => { obj.insert("groupId".to_string(), Value::String(gid.clone())); }
+                        None => { obj.insert("groupId".to_string(), Value::Null); }
+                    }
+                }
+            }
+        }
+    }
+
+    save_passwords(list, master_password, app, state).await
+}
+
 pub fn ensure_authenticated(state: &State<'_, AppState>) -> Result<(), String> {
     let is_auth = *state.is_authenticated.lock().unwrap();
     if !is_auth {

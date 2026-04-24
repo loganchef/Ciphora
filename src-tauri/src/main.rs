@@ -69,6 +69,14 @@ fn main() {
             
             // 系统
             get_app_info,
+
+            // 分组管理
+            get_groups,
+            add_group,
+            update_group,
+            delete_group,
+            reorder_groups,
+            move_passwords_to_group,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
