@@ -743,11 +743,21 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="ungrouped">📂 未分组</SelectItem>
-                                {groups.map(group => (
-                                    <SelectItem key={group.id} value={group.id}>
-                                        <span style={{ color: group.color }}>{group.icon} {group.name}</span>
-                                    </SelectItem>
-                                ))}
+                                {groups.map(group => {
+                                    const iconUrl = group.icon?.includes('/')
+                                        ? `/icons/${encodeURIComponent(group.icon.split('/')[0])}/${group.icon.split('/')[1]}.svg`
+                                        : null;
+                                    return (
+                                        <SelectItem key={group.id} value={group.id}>
+                                            <span className="flex items-center gap-1.5" style={{ color: group.color }}>
+                                                {iconUrl
+                                                    ? <img src={iconUrl} alt="" className="w-4 h-4" style={{ display: 'inline' }} />
+                                                    : group.icon}
+                                                {group.name}
+                                            </span>
+                                        </SelectItem>
+                                    );
+                                })}
                             </SelectContent>
                         </Select>
                     </div>
