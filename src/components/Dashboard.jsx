@@ -9,22 +9,25 @@ import {
     TrashIcon,
     ArrowUpTrayIcon,
     ArrowDownTrayIcon,
+    QrCodeIcon,
 } from "@heroicons/react/24/outline";
 
 import { BentoCard, BentoGrid } from "./ui/bento-grid";
 import ImportExportModal from "./ImportExportModal";
 import SecurityModal from "./SecurityModal";
+import { useMobile } from '../hooks/useMobile';
 
 // 创建 features 数组的函数
 const createFeatures = (passwordCount) => [
     {
         Icon: PlusIcon,
         name: "添加新密码",
-        description: "安全地存储您的网站登录信息、应用程序密码等敏感数据。",
+        description: "快速创建条目，支持网站、MFA、JSON、字符串等多种格式。",
         href: "#",
         cta: "立即添加",
+        ctaClassName: "h-8 px-3 text-xs",
         background: (
-            <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-600/20 blur-3xl" />
+            <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-600/50 blur-3xl" />
         ),
         className: "lg:row-start-1 lg:row-end-4 lg:col-start-2 lg:col-end-3",
     },
@@ -40,49 +43,68 @@ const createFeatures = (passwordCount) => [
             </div>
         ),
         background: (
-            <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-green-500/20 to-blue-600/20 blur-3xl" />
+            <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-green-500/20 to-blue-600/50 blur-3xl" />
         ),
         className: "lg:col-start-1 lg:col-end-2 lg:row-start-1 lg:row-end-3",
     },
     {
         Icon: ShieldCheckIcon,
         name: "安全加密",
-        description: "基于 AES-256-CBC 加密算法，使用 PBKDF2 密钥派生，确保数据安全。",
+        description: "Argon2id 密钥派生 + AES-256-GCM 全程离线加密，本地存储。",
         href: "#",
         cta: "查看原理",
         background: (
-            <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-red-500/20 to-orange-600/20 blur-3xl" />
+            <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-red-500/20 to-orange-600/50 blur-3xl" />
         ),
         className: "lg:col-start-1 lg:col-end-2 lg:row-start-3 lg:row-end-4",
     },
     {
         Icon: ArrowUpTrayIcon,
         name: "导出备份",
-        description: "定期备份您的密码数据，确保数据安全和可移植性。",
+        description: "及时导出加密备份，避免数据丢失。",
         href: "#",
         cta: "创建备份",
+        ctaClassName: "h-8 px-3 text-xs",
         background: (
-            <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-teal-500/20 to-green-600/20 blur-3xl" />
+            <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-teal-500/20 to-green-600/50 blur-3xl" />
         ),
-        className: "lg:col-start-3 lg:col-end-4 lg:row-start-2 lg:row-end-4",
+        className: "lg:col-start-3 lg:col-end-4 lg:row-start-2 lg:row-end-3",
     },
     {
         Icon: ArrowDownTrayIcon,
         name: "导入数据",
-        description: "从其他密码管理器或CSV文件导入您现有的密码数据。",
+        description: "支持 CSV/Excel/Ciphora 备份导入。",
         href: "#",
         cta: "导入数据",
+        ctaClassName: "h-8 px-3 text-xs",
         background: (
-            <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-600/20 blur-3xl" />
+            <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-600/50 blur-3xl" />
         ),
         className: "lg:col-start-3 lg:col-end-4 lg:row-start-1 lg:row-end-2",
     },
+    {
+        Icon: QrCodeIcon,
+        name: "二维码传输",
+        description: "生成高速传输二维码，或切换到接收模式",
+        href: "#",
+        cta: "开始传输",
+        ctaClassName: "h-10 px-4 text-sm",
+        background: (
+            <div className="absolute inset-0 flex items-center justify-center opacity-40">
+                <div className="w-full h-full bg-white/90 border border-dashed border-blue-400 border-2 rounded-xl flex items-center justify-center shadow-inner">
+                    {/* <QrCodeIcon className="w-16 h-16 text-blue-500" /> */}
+                </div>
+            </div>
+        ),
+        className: "lg:col-start-3 lg:col-end-4 lg:row-start-3 lg:row-end-4",
+    },
 ];
 
-function Dashboard({ onAddPassword, onSearch, onSettings, onClearData, onImportPasswords, onExportPasswords, onCreateBackup, onRestoreBackup, passwordCount = 0 }) {
+function Dashboard({ onAddPassword, onSearch, onSettings, onClearData, onImportPasswords, onExportPasswords, onCreateBackup, onRestoreBackup, passwordCount = 0, onShowCimbar }) {
     const [showImportModal, setShowImportModal] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
     const [showSecurityModal, setShowSecurityModal] = useState(false);
+    const { isMobile } = useMobile();
 
     // 处理导入功能
     const handleImportClick = () => {
@@ -122,16 +144,18 @@ function Dashboard({ onAddPassword, onSearch, onSettings, onClearData, onImportP
             return { ...feature, onClick: handleExportClick };
         } else if (feature.name === "安全加密") {
             return { ...feature, onClick: handleSecurityClick };
+        } else if (feature.name === "二维码传输") {
+            return { ...feature, onClick: onShowCimbar };
         }
         return feature;
     });
 
     return (
-        <div className="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-8 overflow-hidden">
+        <div className={`h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 ${isMobile ? 'p-4 overflow-y-auto' : 'p-8 overflow-hidden'}`}>
             {/* Bento Grid Features */}
-            <div className="mb-12">
+            <div className={isMobile ? 'mb-4' : 'mb-12'}>
                 <div className="max-w-7xl mx-auto">
-                    <BentoGrid className="lg:grid-rows-3">
+                    <BentoGrid className={isMobile ? 'grid-rows-auto' : 'lg:grid-rows-3'}>
                         {featuresWithHandlers.map((feature) => (
                             <BentoCard key={feature.name} {...feature} />
                         ))}

@@ -30,6 +30,8 @@ const SetupView = ({ onComplete }) => {
             const result = await window.api.initialize(masterPassword);
 
             if (result.success) {
+                // 保存主密码到全局变量（用于后续 API 调用）
+                window.__masterPassword = masterPassword;
                 setIsLoading(false);
                 onComplete();
             } else {

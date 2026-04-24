@@ -4,6 +4,7 @@ import CopyButton from './CopyButton';
 
 const TOTPDisplay = ({ secret, issuer = 'Ciphora', accountName = 'Account' }) => {
     const [totp, setTotp] = useState('');
+    const [nextTotp, setNextTotp] = useState('');
     const [timeLeft, setTimeLeft] = useState(30);
     const [isLoading, setIsLoading] = useState(true);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -32,6 +33,26 @@ const TOTPDisplay = ({ secret, issuer = 'Ciphora', accountName = 'Account' }) =>
         }
     };
 
+    // 生成下一组 TOTP 码的函数
+    const generateNextTOTP = async (secret) => {
+        try {
+            // 调用后端的下一组 TOTP 生成函数
+            if (window.api && window.api.generateNextTOTP) {
+                const result = await window.api.generateNextTOTP(secret);
+                if (result.success) {
+                    setNextTotp(result.totp);
+                } else {
+                    setNextTotp('ERROR');
+                }
+            } else {
+                setNextTotp('API_ERROR');
+            }
+        } catch (error) {
+            console.error('生成下一组 TOTP 失败:', error);
+            setNextTotp('ERROR');
+        }
+    };
+
     // 计算当前时间步长和剩余时间
     const getTimeInfo = () => {
         const now = Math.floor(Date.now() / 1000);
@@ -54,6 +75,7 @@ const TOTPDisplay = ({ secret, issuer = 'Ciphora', accountName = 'Account' }) =>
 
         // 初始生成 TOTP
         generateTOTP(secret);
+        generateNextTOTP(secret);
 
         // 设置倒计时，每 100ms 更新一次以确保精确同步
         const timer = setInterval(() => {
@@ -64,6 +86,7 @@ const TOTPDisplay = ({ secret, issuer = 'Ciphora', accountName = 'Account' }) =>
             if (timeStep !== lastTimeStep) {
                 lastTimeStep = timeStep;
                 generateTOTP(secret);
+                generateNextTOTP(secret);
             }
         }, 100);
 
@@ -128,10 +151,10 @@ const TOTPDisplay = ({ secret, issuer = 'Ciphora', accountName = 'Account' }) =>
 
             <div>
                 <label className="block text-sm font-medium text-gray-600 mb-2">当前验证码</label>
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-3">
-                    <div className="flex items-center justify-between mb-3">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
                         <div
-                            className={`font-mono text-4xl font-bold tracking-wider cursor-pointer transition-all duration-200 select-none ${isCopied
+                            className={`font-mono flex-col items-start justify-start gap-1 text-3xl font-bold tracking-wider cursor-pointer transition-all duration-200 select-none ${isCopied
                                 ? 'text-green-600 transform scale-105'
                                 : 'text-gray-800 hover:text-blue-600 hover:scale-105'
                                 }`}
@@ -139,13 +162,23 @@ const TOTPDisplay = ({ secret, issuer = 'Ciphora', accountName = 'Account' }) =>
                             title="点击复制验证码"
                         >
                             {isLoading ? '...' : totp}
+                            {/* 下一组验证码预告 */}
+                            {nextTotp && (
+                                <div className="text-left">
+                                    <div className="font-mono text-sm text-gray-400 select-none">
+                                        {nextTotp}<span className="text-xs text-gray-400">({timeLeft}s)</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* 复制按钮 */}
                         <CopyButton text={totp} label=" 复制" />
                     </div>
 
-                    {/* 倒计时文字和进度条 */}
+
+
+                    {/* 倒计时 */}
                     <div className="flex items-center gap-3">
                         <div className="flex-1">
                             <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -168,7 +201,7 @@ const TOTPDisplay = ({ secret, issuer = 'Ciphora', accountName = 'Account' }) =>
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             <div className="text-xs text-gray-500 text-center bg-gray-50 rounded-lg p-2">
                 <div className="font-medium">验证码每 30 秒更新一次</div>
@@ -179,7 +212,7 @@ const TOTPDisplay = ({ secret, issuer = 'Ciphora', accountName = 'Account' }) =>
                     }
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

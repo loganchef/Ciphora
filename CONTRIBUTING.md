@@ -5,18 +5,23 @@
 ## 如何贡献
 
 ### 报告 Bug
+
 如果您发现了 Bug，请通过以下方式报告：
-- 在 [Issues](https://github.com/binrc/Ciphora/issues) 页面创建新的 Issue
+
+- 在 [Issues](https://github.com/loganchef/Ciphora/issues) 页面创建新的 Issue
 - 详细描述问题现象和复现步骤
 - 提供您的操作系统和 Ciphora 版本信息
 
 ### 功能建议
+
 如果您有新功能建议，请：
-- 在 [Issues](https://github.com/binrc/Ciphora/issues) 页面创建 Feature Request
+
+- 在 [Issues](https://github.com/loganchef/Ciphora/issues) 页面创建 Feature Request
 - 详细描述功能需求和预期效果
 - 讨论实现方案和优先级
 
 ### 代码贡献
+
 如果您想贡献代码：
 
 1. Fork 本仓库
@@ -57,4 +62,4 @@ yarn electron:dev
 
 ## 许可证
 
-通过贡献代码，您同意您的贡献将在 MIT 许可证下发布。 
+通过贡献代码，您同意您的贡献将在 MIT 许可证下发布。

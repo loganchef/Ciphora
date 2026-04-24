@@ -21,20 +21,20 @@ const SecurityModal = ({ isOpen, onClose }) => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-white rounded-lg p-4 shadow-sm">
-                        <h4 className="font-medium text-gray-900 mb-2">AES-256-CBC 加密</h4>
-                        <p className="text-sm text-gray-600">使用业界标准的对称加密算法，密钥长度256位</p>
+                        <h4 className="font-medium text-gray-900 mb-2">AES-256-GCM 加密</h4>
+                        <p className="text-sm text-gray-600">使用带认证标签的 GCM 模式，防止篡改与伪造</p>
                     </div>
                     <div className="bg-white rounded-lg p-4 shadow-sm">
-                        <h4 className="font-medium text-gray-900 mb-2">PBKDF2 密钥派生</h4>
-                        <p className="text-sm text-gray-600">基于密码的密钥派生函数，防止彩虹表攻击</p>
+                        <h4 className="font-medium text-gray-900 mb-2">Argon2id 密钥派生</h4>
+                        <p className="text-sm text-gray-600">抗 GPU 暴力破解的 KDF，内置随机盐与资源限制</p>
                     </div>
                     <div className="bg-white rounded-lg p-4 shadow-sm">
                         <h4 className="font-medium text-gray-900 mb-2">设备绑定</h4>
-                        <p className="text-sm text-gray-600">每个设备生成唯一ID，增强安全性</p>
+                        <p className="text-sm text-gray-600">每台设备生成唯一 ID 与设置文件，离线隔离</p>
                     </div>
                     <div className="bg-white rounded-lg p-4 shadow-sm">
-                        <h4 className="font-medium text-gray-900 mb-2">MFA 支持</h4>
-                        <p className="text-sm text-gray-600">支持TOTP双因素认证，提供额外保护</p>
+                        <h4 className="font-medium text-gray-900 mb-2">TOTP MFA</h4>
+                        <p className="text-sm text-gray-600">内置 TOTP 生成与验证器，支持双因素安全登录</p>
                     </div>
                 </div>
             </div>
@@ -79,21 +79,21 @@ const SecurityModal = ({ isOpen, onClose }) => {
                         <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
                         <div>
                             <h4 className="font-medium text-gray-900">密钥派生</h4>
-                            <p className="text-sm text-gray-600">使用 PBKDF2 + 设备ID 生成加密密钥</p>
+                            <p className="text-sm text-gray-600">Argon2id 结合随机盐与设备 ID 派生 256 位密钥</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-4 p-4 bg-purple-50 rounded-lg">
                         <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
                         <div>
                             <h4 className="font-medium text-gray-900">数据加密</h4>
-                            <p className="text-sm text-gray-600">使用 AES-256-CBC 加密所有密码数据</p>
+                            <p className="text-sm text-gray-600">用 AES-256-GCM + 随机 96bit Nonce 保护密码正文</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-4 p-4 bg-orange-50 rounded-lg">
                         <div className="w-8 h-8 bg-orange-600 text-white rounded-full flex items-center justify-center text-sm font-bold">4</div>
                         <div>
                             <h4 className="font-medium text-gray-900">安全存储</h4>
-                            <p className="text-sm text-gray-600">加密数据存储到本地文件系统</p>
+                            <p className="text-sm text-gray-600">加密结果 + Nonce + 盐以 Base64 形式保存在本地</p>
                         </div>
                     </div>
                 </div>
@@ -103,21 +103,21 @@ const SecurityModal = ({ isOpen, onClose }) => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">技术细节</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="border border-gray-200 rounded-lg p-4">
-                        <h4 className="font-medium text-gray-900 mb-2">AES-256-CBC</h4>
+                        <h4 className="font-medium text-gray-900 mb-2">AES-256-GCM</h4>
                         <ul className="text-sm text-gray-600 space-y-1">
-                            <li>• 密钥长度：256位</li>
-                            <li>• 块大小：128位</li>
-                            <li>• 模式：CBC（密码块链接）</li>
-                            <li>• 初始化向量：随机生成</li>
+                            <li>• 密钥长度：256 位</li>
+                            <li>• 模式：GCM（带认证标签）</li>
+                            <li>• Nonce：随机 96 bit</li>
+                            <li>• 输出：密文 + Tag + Nonce</li>
                         </ul>
                     </div>
                     <div className="border border-gray-200 rounded-lg p-4">
-                        <h4 className="font-medium text-gray-900 mb-2">PBKDF2</h4>
+                        <h4 className="font-medium text-gray-900 mb-2">Argon2id</h4>
                         <ul className="text-sm text-gray-600 space-y-1">
-                            <li>• 哈希函数：SHA-256</li>
-                            <li>• 迭代次数：100,000+</li>
-                            <li>• 盐值：设备ID</li>
-                            <li>• 输出长度：256位</li>
+                            <li>• Memory：64 MB</li>
+                            <li>• Iterations：3+</li>
+                            <li>• 盐值：随机 128 bit + 设备 ID</li>
+                            <li>• 输出：32 字节对称密钥</li>
                         </ul>
                     </div>
                 </div>
@@ -225,7 +225,7 @@ const SecurityModal = ({ isOpen, onClose }) => {
     );
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in safe-area-top safe-area-bottom">
             <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">

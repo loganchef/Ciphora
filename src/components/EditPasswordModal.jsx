@@ -325,7 +325,7 @@ const EditPasswordModal = ({ password, onClose, onSave }) => {
     if (!password) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in safe-area-top safe-area-bottom">
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="p-4 border-b border-gray-100">

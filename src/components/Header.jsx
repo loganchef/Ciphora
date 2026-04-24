@@ -1,20 +1,15 @@
 import React, { useState } from 'react';
 import {
-    Bars3Icon,
-    XMarkIcon,
-    ArrowLeftIcon,
     CogIcon,
-    UserIcon,
     ShieldCheckIcon,
     HomeIcon,
-    PlusIcon,
-    MagnifyingGlassIcon,
-    QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { useMobile } from '../hooks/useMobile';
 
-const Header = ({ onLogout, onBack, showBack = false, currentView = 'main', onViewChange }) => {
+const Header = ({ onLogout, currentView = 'main', onViewChange }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const { isMobile } = useMobile();
 
     const handleTabChange = (newValue) => {
         if (newValue === 'vault') {
@@ -27,7 +22,7 @@ const Header = ({ onLogout, onBack, showBack = false, currentView = 'main', onVi
     };
 
     return (
-        <header className=" top-0 z-50">
+        <header className="top-0 z-40 desktop-only border-b border-transparent bg-transparent">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col">
                     {/* Top Row - Logo and User Actions */}
@@ -36,61 +31,41 @@ const Header = ({ onLogout, onBack, showBack = false, currentView = 'main', onVi
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-3">
                                 <img src="../res/logo.png" alt="Ciphora" className="w-10 h-10 rounded-lg" />
-                                <h1 className="text-2xl font-bold">Ciphora</h1>
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ciphora</h1>
                             </div>
                         </div>
-                        {/* Navigation Row - Tabs */}
-                        <div className="flex justify-center py-4">
-                            <Tabs
-                                defaultValue={currentView === 'main' ? 'vault' : currentView === 'dashboard' ? 'dashboard' : 'settings'}
-                                className="text-sm text-gray-600"
-                                onChange={handleTabChange}
-                            >
-                                <TabsList variant="button" className="w-auto grid grid-cols-3 gap-2">
-                                    <TabsTrigger tabValue="vault" className="mx-1">
-                                        <HomeIcon className="w-4 h-4 mr-2" />
-                                        保险库
-                                    </TabsTrigger>
-                                    <TabsTrigger tabValue="dashboard" className="mx-1">
-                                        <ShieldCheckIcon className="w-4 h-4 mr-2" />
-                                        操作面板
-                                    </TabsTrigger>
-                                    <TabsTrigger tabValue="settings" className="mx-1">
-                                        <CogIcon className="w-4 h-4 mr-2" />
-                                        设置
-                                    </TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                        </div>
-
-                        {/* Mobile Navigation */}
-                        {isMenuOpen && (
-                            <div className="md:hidden border-t border-gray-200/50 py-4">
-                                <nav className="flex flex-col gap-2">
-                                    <button
-                                        onClick={() => onViewChange('main')}
-                                        className="text-left px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors duration-200 font-medium"
-                                    >
-                                        保险库
-                                    </button>
-                                    <button
-                                        onClick={() => onViewChange('dashboard')}
-                                        className="text-left px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors duration-200 font-medium"
-                                    >
-                                        操作面板
-                                    </button>
-                                    <button className="text-left px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors duration-200 font-medium">
-                                        设置
-                                    </button>
-                                </nav>
+                        {/* Navigation Row - Tabs (桌面端) */}
+                        {!isMobile && (
+                            <div className="flex justify-center py-4">
+                                <Tabs
+                                    defaultValue={currentView === 'main' ? 'vault' : currentView === 'dashboard' ? 'dashboard' : 'settings'}
+                                    className="text-sm text-gray-600"
+                                    onChange={handleTabChange}
+                                >
+                                    <TabsList variant="line" className="w-auto grid grid-cols-3 gap-6 border-none">
+                                        <TabsTrigger tabValue="vault" className="mx-1">
+                                            <HomeIcon className="w-4 h-4 mr-2" />
+                                            保险库
+                                        </TabsTrigger>
+                                        <TabsTrigger tabValue="dashboard" className="mx-1">
+                                            <ShieldCheckIcon className="w-4 h-4 mr-2" />
+                                            操作面板
+                                        </TabsTrigger>
+                                        <TabsTrigger tabValue="settings" className="mx-1">
+                                            <CogIcon className="w-4 h-4 mr-2" />
+                                            设置
+                                        </TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
                             </div>
                         )}
+
                         {/* Right side - User menu and Logout */}
                         <div className="flex items-center gap-4">
                             {/* Logout button */}
                             <button
                                 onClick={onLogout}
-                                className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r  rounded-lg hover:from-gray-300 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                className="flex items-center gap-1 px-3 py-2 bg-white hover:bg-gray-100 rounded-lg transition-all duration-200 text-gray-700"
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -107,19 +82,7 @@ const Header = ({ onLogout, onBack, showBack = false, currentView = 'main', onVi
                                     <polyline points="16 17 21 12 16 7"></polyline>
                                     <line x1="21" y1="12" x2="9" y2="12"></line>
                                 </svg>
-                                <span className="hidden sm:block text-sm">退出</span>
-                            </button>
-
-                            {/* Mobile menu button */}
-                            <button
-                                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                className="md:hidden p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200"
-                            >
-                                {isMenuOpen ? (
-                                    <XMarkIcon className="w-6 h-6 text-gray-600" />
-                                ) : (
-                                    <Bars3Icon className="w-6 h-6 text-gray-600" />
-                                )}
+                                <span className="hidden sm:block text-sm font-medium">退出</span>
                             </button>
                         </div>
                     </div>

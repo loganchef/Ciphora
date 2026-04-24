@@ -29,7 +29,7 @@ const PasswordInputModal = ({ isOpen, onClose, onConfirm, title, message, placeh
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-fade-in">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-fade-in safe-area-top safe-area-bottom">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">

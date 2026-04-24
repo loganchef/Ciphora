@@ -34,6 +34,8 @@ const LoginView = ({ onSuccess }) => {
             const result = await window.api.login(password);
 
             if (result.success) {
+                // 保存主密码到全局变量（用于后续 API 调用）
+                window.__masterPassword = password;
                 setIsLoading(false);
                 onSuccess();
             } else {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     ShieldCheckIcon,
     KeyIcon,
@@ -7,13 +7,46 @@ import {
     QrCodeIcon,
     HeartIcon,
     CogIcon,
-    ArrowLeftIcon,
     LockClosedIcon
 } from '@heroicons/react/24/outline';
 import ConfirmInputModal from './ConfirmInputModal';
 import CustomDialog from './CustomDialog';
 
-const SettingsView = ({ onBack, onLogout }) => {
+const defaultSettings = {
+    autoLock: {
+        enabled: true,
+        timeout: 1800000,
+        onMinimize: true,
+        onBlur: false
+    },
+    passwordGenerator: {
+        defaultLength: 16,
+        includeUppercase: true,
+        includeLowercase: true,
+        includeNumbers: true,
+        includeSymbols: true,
+        excludeSimilar: true,
+        customCharset: ''
+    },
+    ui: {
+        hideSensitiveButtons: true,
+        showPasswordStrength: true,
+        compactMode: false,
+        theme: 'system'
+    },
+    mfa: {
+        enabled: false,
+        secret: null,
+        backupCodes: []
+    },
+    importExport: {
+        autoBackup: true,
+        backupInterval: 86400000,
+        lastBackup: null
+    }
+};
+
+const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate }) => {
     const [activeSection, setActiveSection] = useState('general');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [dialogConfig, setDialogConfig] = useState({
@@ -27,48 +60,18 @@ const SettingsView = ({ onBack, onLogout }) => {
     });
 
     // 设置状态
-    const [settings, setSettings] = useState({
-        autoLock: {
-            enabled: true,
-            timeout: 1800000, // 30分钟 (30 * 60 * 1000)
-            onMinimize: true,
-            onBlur: false
-        },
-        passwordGenerator: {
-            defaultLength: 16,
-            includeUppercase: true,
-            includeLowercase: true,
-            includeNumbers: true,
-            includeSymbols: true,
-            excludeSimilar: true, // 默认排除相似字符
-            customCharset: ''
-        },
-        ui: {
-            hideSensitiveButtons: true, // 默认隐藏敏感按钮
-            showPasswordStrength: true,
-            compactMode: false,
-            theme: 'system'
-        },
-        mfa: {
-            enabled: false,
-            secret: null,
-            backupCodes: []
-        },
-        importExport: {
-            autoBackup: true,
-            backupInterval: 86400000,
-            lastBackup: null
-        }
-    });
-    const [isLoading, setIsLoading] = useState(false);
+    const [settings, setSettings] = useState(initialSettings || defaultSettings);
 
-    // 加载设置
-    React.useEffect(() => {
-        loadSettings();
-    }, []);
+    useEffect(() => {
+        if (initialSettings) {
+            setSettings(initialSettings);
+        } else {
+            loadSettings();
+        }
+    }, [initialSettings]);
 
     // 监听设置变化，当隐藏敏感按钮时自动切换区域
-    React.useEffect(() => {
+    useEffect(() => {
         if (settings?.ui?.hideSensitiveButtons && activeSection === 'danger') {
             setActiveSection('general');
         }
@@ -76,15 +79,13 @@ const SettingsView = ({ onBack, onLogout }) => {
 
     const loadSettings = async () => {
         try {
-            setIsLoading(true);
             const result = await window.api.getSettings();
             if (result.success) {
                 setSettings(result.settings);
+                onSettingsUpdate?.(result.settings);
             }
         } catch (error) {
             console.error('加载设置失败:', error);
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -96,54 +97,40 @@ const SettingsView = ({ onBack, onLogout }) => {
         mfaToken: ''
     });
 
-    const handleSettingChange = async (key, value) => {
+    const persistSetting = async (key, value, previousState) => {
         try {
-            // 更新本地状态
-            setSettings(prev => ({ ...prev, [key]: value }));
-
-            // 保存到后端
             const result = await window.api.updateSetting(key, value);
-            if (result.success) {
-                console.log('设置已保存:', key, value);
+            if (result.success && result.settings) {
+                setSettings(result.settings);
+                onSettingsUpdate?.(result.settings);
             } else {
                 console.error('保存设置失败:', result.message);
-                // 如果保存失败，恢复原值
-                setSettings(prev => ({ ...prev, [key]: !value }));
+                setSettings(previousState);
             }
         } catch (error) {
             console.error('保存设置失败:', error);
-            // 如果保存失败，恢复原值
-            setSettings(prev => ({ ...prev, [key]: !value }));
+            setSettings(previousState);
         }
     };
 
+    const handleSettingChange = async (key, value) => {
+        const previous = settings;
+        const next = { ...settings, [key]: value };
+        setSettings(next);
+        await persistSetting(key, next[key], previous);
+    };
+
     const handleNestedSettingChange = async (category, key, value) => {
-        try {
-            // 更新本地状态
-            const newSettings = {
-                ...settings,
-                [category]: {
-                    ...settings[category],
-                    [key]: value
-                }
-            };
-
-            setSettings(newSettings);
-
-            // 保存到后端 - 传递完整的设置对象
-            const result = await window.api.updateSetting(category, newSettings[category]);
-            if (result.success) {
-                console.log('设置已保存:', category, key, value);
-            } else {
-                console.error('保存设置失败:', result.message);
-                // 如果保存失败，恢复原值
-                setSettings(settings);
+        const previous = settings;
+        const next = {
+            ...settings,
+            [category]: {
+                ...settings[category],
+                [key]: value
             }
-        } catch (error) {
-            console.error('保存设置失败:', error);
-            // 如果保存失败，恢复原值
-            setSettings(settings);
-        }
+        };
+        setSettings(next);
+        await persistSetting(category, next[category], previous);
     };
 
     const handleResetPassword = async () => {
@@ -355,13 +342,12 @@ const SettingsView = ({ onBack, onLogout }) => {
                                 <p className="text-sm text-gray-500">设置空闲多少分钟后自动锁定</p>
                             </div>
                             <select
-                                value={Math.floor(settings.autoLock.timeout / 60000)} // 转换为分钟
+                                value={settings.autoLock.timeout === 0 ? 0 : Math.floor(settings.autoLock.timeout / 60000)} // 转换为分钟，0表示永不
                                 onChange={(e) => {
                                     const timeoutMinutes = parseInt(e.target.value);
                                     if (timeoutMinutes === 0) {
-                                        // 如果选择"永不"，禁用自动锁定
-                                        handleNestedSettingChange('autoLock', 'enabled', false);
-                                        handleNestedSettingChange('autoLock', 'timeout', 1800000); // 重置为默认30分钟
+                                        // 如果选择"永不"，保持自动锁定启用，但设置超时时间为0
+                                        handleNestedSettingChange('autoLock', 'timeout', 0);
                                     } else {
                                         handleNestedSettingChange('autoLock', 'timeout', timeoutMinutes * 60000);
                                     }
@@ -373,7 +359,7 @@ const SettingsView = ({ onBack, onLogout }) => {
                                 <option value={15}>15 分钟</option>
                                 <option value={30}>30 分钟</option>
                                 <option value={60}>1 小时</option>
-                                <option value={0}>永不（禁用自动锁定）</option>
+                                <option value={0}>永不</option>
                             </select>
                         </div>
                     )}

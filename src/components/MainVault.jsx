@@ -6,11 +6,12 @@ import {
     ArrowUpTrayIcon,
     ArrowDownTrayIcon,
     TrashIcon,
-    ArrowLeftIcon
 } from '@heroicons/react/24/outline';
+import { useMobile } from '../hooks/useMobile';
 
-const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPassword, onDeletePassword, onBack, hideSensitiveButtons = false }) => {
+const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPassword, onDeletePassword, hideSensitiveButtons = false }) => {
     const [searchQuery, setSearchQuery] = useState('');
+    const { isMobile } = useMobile();
 
     const filteredPasswords = passwords.filter(password =>
         (password.website?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
@@ -28,33 +29,37 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
     return (
         <div className="h-full flex flex-col">
             {/* Fixed Header with Search */}
-            <div className="flex-shrink-0 p-4">
-                <div className="max-w-7xl mx-auto flex justify-end items-center">
-                    <SearchBox
-                        value={searchQuery}
-                        onChange={setSearchQuery}
-                    />
-                    <button
-                        onClick={onAddPassword}
-                        disabled={isLoading}
-                        className="inline-flex ml-4 items-center gap-2 px-3 py-2 bg-neutral-700 text-white rounded-lg hover:bg-neutral-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <PlusIcon className="w-4 h-4" />
-                        <span>{isLoading ? '加载中...' : '添加'}</span>
-                    </button>
+            <div className={`flex-shrink-0 ${isMobile ? 'p-3 safe-area-top' : 'p-4'}`}>
+                <div className={`max-w-7xl mx-auto flex ${isMobile ? 'flex-col gap-3' : 'justify-end items-center'}`}>
+                    <div className={`flex ${isMobile ? 'w-full gap-2' : 'items-center'}`}>
+                        <div className={isMobile ? 'flex-1' : ''}>
+                            <SearchBox
+                                value={searchQuery}
+                                onChange={setSearchQuery}
+                            />
+                        </div>
+                        <button
+                            onClick={onAddPassword}
+                            disabled={isLoading}
+                            className={`inline-flex items-center gap-2 ${isMobile ? 'px-4 py-3 flex-1 justify-center' : 'px-3 py-2 ml-4'} bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                            <PlusIcon className="w-5 h-5" />
+                            <span>{isLoading ? '加载中...' : '添加'}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24">
+            <div className="flex-1 overflow-y-auto swipe-container">
+                <div className={`max-w-7xl mx-auto ${isMobile ? 'px-3 pt-4 pb-24' : 'px-4 sm:px-6 lg:px-8 pt-6 pb-24'}`}>
                     {isLoading ? (
                         <div className="text-center py-12">
                             <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                             <p className="text-gray-600">加载中...</p>
                         </div>
                     ) : filteredPasswords.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}`}>
                             {filteredPasswords.map((password) => (
                                 <PasswordCard
                                     key={password.id}

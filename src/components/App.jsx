@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from './Header';
 import MainVault from './MainVault';
 import SetupView from './SetupView';
@@ -9,9 +9,12 @@ import EditPasswordModal from './EditPasswordModal';
 import PasswordInputModal from './PasswordInputModal';
 import ImportPreviewModal from './ImportPreviewModal';
 import SettingsView from './SettingsView';
+import CimbarTransfer from './CimbarTransfer';
+import MobileBottomNav from './MobileBottomNav';
+import { useMobile } from '../hooks/useMobile';
 
 const App = () => {
-    const [currentView, setCurrentView] = useState('loading'); // 'loading', 'setup', 'login', 'dashboard', 'main', 'settings'
+    const [currentView, setCurrentView] = useState(null); // null 表示未初始化，'setup', 'login', 'dashboard', 'main', 'settings'
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
@@ -26,50 +29,40 @@ const App = () => {
     const [importPreviewData, setImportPreviewData] = useState(null);
     const [autoLockTimer, setAutoLockTimer] = useState(null);
     const [settings, setSettings] = useState(null);
-    const [startupProgress, setStartupProgress] = useState(0);
-    const [startupMessage, setStartupMessage] = useState('正在启动应用...');
+    const [showCimbar, setShowCimbar] = useState(false);
+    const { isMobile } = useMobile();
 
     useEffect(() => {
-        // 应用启动初始化
+        // 应用启动初始化 - 简化版本，直接检查并显示界面
         const initializeApp = async () => {
             try {
-                setStartupProgress(10);
-                setStartupMessage('正在检查应用状态...');
-
-                // 等待一小段时间让用户看到进度
-                await new Promise(resolve => setTimeout(resolve, 100));
-
-                setStartupProgress(30);
-                setStartupMessage('正在连接后端服务...');
-
-                // 检查是否已经设置过主密码
-                const result = await window.api.checkInitializationStatus();
-
-                setStartupProgress(60);
-                setStartupMessage('正在加载配置...');
-
-                if (result.success && result.isInitialized) {
-                    setStartupProgress(80);
-                    setStartupMessage('正在准备登录界面...');
-                    setCurrentView('login');
-                } else {
-                    setStartupProgress(80);
-                    setStartupMessage('正在准备设置界面...');
-                    setCurrentView('setup');
+                // 等待 API 就绪（最多等待 3 秒）
+                let retries = 0;
+                while (typeof window === 'undefined' || !window.api) {
+                    if (retries++ > 30) {
+                        // 超时后默认显示设置界面
+                        setCurrentView('setup');
+                        return;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
 
-                setStartupProgress(100);
-                setStartupMessage('启动完成');
-
-                // 短暂显示完成消息后清除
-                setTimeout(() => {
-                    setStartupProgress(0);
-                }, 500);
-
+                // 检查是否已经设置过主密码
+                try {
+                    const result = await window.api.checkInitializationStatus();
+                    if (result && result.success && result.isInitialized) {
+                        setCurrentView('login');
+                    } else {
+                        setCurrentView('setup');
+                    }
+                } catch (error) {
+                    console.error('检查初始化状态失败:', error);
+                    // 出错时默认显示设置界面
+                    setCurrentView('setup');
+                }
             } catch (error) {
                 console.error('应用初始化失败:', error);
-                setStartupMessage('启动失败，请重试');
-                // 如果检查失败，默认显示设置页面
+                // 出错时默认显示设置界面
                 setCurrentView('setup');
             }
         };
@@ -152,43 +145,53 @@ const App = () => {
         };
     }, [isAuthenticated, settings?.autoLock?.enabled, settings?.autoLock?.timeout]);
 
-    // 启动加载界面
-    if (currentView === 'loading') {
+    // 加载密码数据
+    const loadPasswords = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            console.log('开始加载密码数据...');
+
+            // 调用后端 API 来获取密码数据
+            const result = await window.api.getPasswords();
+            console.log('获取密码结果:', result);
+
+            if (Array.isArray(result)) {
+                // 转换数据格式，确保前端组件能正确显示
+                const formattedPasswords = result.map(pwd => ({
+                    ...pwd,
+                    type: pwd.dataType || pwd.type || 'password' // 统一使用 type 字段
+                }));
+                console.log('格式化后的密码数据:', formattedPasswords);
+                setPasswords(formattedPasswords);
+            } else {
+                console.error('获取密码失败:', result);
+                setPasswords([]);
+            }
+        } catch (error) {
+            console.error('加载密码失败:', error);
+            setPasswords([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            loadPasswords();
+        }
+    }, [isAuthenticated, loadPasswords]);
+
+    // 如果还未初始化，显示一个简单的等待界面（通常很快，用户几乎看不到）
+    if (currentView === null) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-                <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4">
-                    <div className="text-center">
-                        {/* Logo */}
-                        <div className="mb-6">
-                            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mx-auto flex items-center justify-center">
-                                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        {/* 标题 */}
-                        <h1 className="text-2xl font-bold text-gray-900 mb-2">Ciphora</h1>
-                        <p className="text-gray-600 mb-6">安全密码管理器</p>
-
-                        {/* 进度条 */}
-                        <div className="mb-4">
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div
-                                    className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-300 ease-out"
-                                    style={{ width: `${startupProgress}%` }}
-                                ></div>
-                            </div>
-                        </div>
-
-                        {/* 进度文本 */}
-                        <p className="text-sm text-gray-500">{startupMessage}</p>
-
-                        {/* 进度百分比 */}
-                        {startupProgress > 0 && (
-                            <p className="text-xs text-gray-400 mt-2">{startupProgress}%</p>
-                        )}
+                <div className="text-center">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mx-auto flex items-center justify-center mb-4">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
                     </div>
+                    <h1 className="text-xl font-bold text-gray-900">Ciphora</h1>
                 </div>
             </div>
         );
@@ -253,40 +256,6 @@ const App = () => {
                 break;
             default:
                 break;
-        }
-    };
-
-    const handleBackToDashboard = () => {
-        setCurrentView('dashboard');
-    };
-
-    // 加载密码数据
-    const loadPasswords = async () => {
-        try {
-            setIsLoading(true);
-            console.log('开始加载密码数据...');
-
-            // 调用后端 API 来获取密码数据
-            const result = await window.api.getPasswords();
-            console.log('获取密码结果:', result);
-
-            if (Array.isArray(result)) {
-                // 转换数据格式，确保前端组件能正确显示
-                const formattedPasswords = result.map(pwd => ({
-                    ...pwd,
-                    type: pwd.dataType || pwd.type || 'password' // 统一使用 type 字段
-                }));
-                console.log('格式化后的密码数据:', formattedPasswords);
-                setPasswords(formattedPasswords);
-            } else {
-                console.error('获取密码失败:', result);
-                setPasswords([]);
-            }
-        } catch (error) {
-            console.error('加载密码失败:', error);
-            setPasswords([]);
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -704,12 +673,14 @@ const App = () => {
             )}
 
             {currentView === 'dashboard' && (
-                <div>
-                    <Header
-                        onLogout={handleLogout}
-                        currentView={currentView}
-                        onViewChange={handleViewChange}
-                    />
+                <div className="h-full flex flex-col">
+                    {!isMobile && (
+                        <Header
+                            onLogout={handleLogout}
+                            currentView={currentView}
+                            onViewChange={handleViewChange}
+                        />
+                    )}
                     <Dashboard
                         onAddPassword={() => handleDashboardAction('addPassword')}
                         onSearch={() => handleDashboardAction('search')}
@@ -720,44 +691,66 @@ const App = () => {
                         onCreateBackup={handleCreateBackup}
                         onRestoreBackup={handleRestoreBackup}
                         passwordCount={passwords.length}
+                        onShowCimbar={() => setShowCimbar(true)}
                     />
+                    {isMobile && (
+                        <MobileBottomNav
+                            currentView={currentView}
+                            onViewChange={handleViewChange}
+                            onShowCimbar={() => setShowCimbar(true)}
+                        />
+                    )}
                 </div>
             )}
 
             {currentView === 'main' && (
                 <div className="h-full flex flex-col">
-                    <Header
-                        onLogout={handleLogout}
-                        currentView={currentView}
-                        onViewChange={handleViewChange}
-                        showBack={true}
-                        onBack={handleBackToDashboard}
-                    />
+                    {!isMobile && (
+                        <Header
+                            onLogout={handleLogout}
+                            currentView={currentView}
+                            onViewChange={handleViewChange}
+                        />
+                    )}
                     <MainVault
                         passwords={passwords}
                         isLoading={isLoading}
                         onAddPassword={openAddModal}
                         onEditPassword={openEditModal}
                         onDeletePassword={handleDeletePassword}
-                        onBack={handleBackToDashboard}
                         hideSensitiveButtons={settings?.ui?.hideSensitiveButtons || false}
                     />
+                    {isMobile && (
+                        <MobileBottomNav
+                            currentView={currentView}
+                            onViewChange={handleViewChange}
+                            onShowCimbar={() => setShowCimbar(true)}
+                        />
+                    )}
                 </div>
             )}
 
             {currentView === 'settings' && (
-                <div>
-                    <Header
-                        onLogout={handleLogout}
-                        currentView={currentView}
-                        onViewChange={handleViewChange}
-                        showBack={true}
-                        onBack={handleBackToDashboard}
-                    />
+                <div className="h-full flex flex-col">
+                    {!isMobile && (
+                        <Header
+                            onLogout={handleLogout}
+                            currentView={currentView}
+                            onViewChange={handleViewChange}
+                        />
+                    )}
                     <SettingsView
-                        onBack={handleBackToDashboard}
                         onLogout={handleLogout}
+                        settings={settings}
+                        onSettingsUpdate={setSettings}
                     />
+                    {isMobile && (
+                        <MobileBottomNav
+                            currentView={currentView}
+                            onViewChange={handleViewChange}
+                            onShowCimbar={() => setShowCimbar(true)}
+                        />
+                    )}
                 </div>
             )}
 
@@ -823,6 +816,14 @@ const App = () => {
                     importData={[...importPreviewData.new, ...importPreviewData.conflicts.map(c => c.imported)]}
                     existingData={importPreviewData.existing}
                     conflicts={importPreviewData.conflicts}
+                />
+            )}
+
+            {showCimbar && (
+                <CimbarTransfer
+                    passwords={passwords}
+                    onRefresh={loadPasswords}
+                    onClose={() => setShowCimbar(false)}
                 />
             )}
         </div>

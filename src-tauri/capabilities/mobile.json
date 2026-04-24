@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "mobile",
+  "description": "移动端权限配置",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "fs:default",
+    "dialog:default",
+    "shell:default",
+    {
+      "identifier": "fs:allow-app-read",
+      "allow": [
+        { "path": "$APPDATA/*" },
+        { "path": "$APPDATA/**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-app-write",
+      "allow": [
+        { "path": "$APPDATA/*" },
+        { "path": "$APPDATA/**" }
+      ]
+    }
+  ]
+}
+
+
+
+
