@@ -57,7 +57,7 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
             {/* Toolbar: group tabs | search | buttons in one row */}
             <div className={`flex-shrink-0 ${isMobile ? 'p-3 safe-area-top' : 'p-4'}`}>
                 <div className={`max-w-7xl mx-auto ${isMobile ? 'space-y-3' : 'flex items-center gap-3'}`}>
-                    {/* Group tabs — scroll horizontally if too many */}
+                    {/* Group tabs — occupy remaining space */}
                     {isMobile ? (
                         <div className="overflow-x-auto">
                             <GroupTabs
@@ -69,7 +69,7 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
                             />
                         </div>
                     ) : (
-                        <div className="overflow-x-auto flex-shrink min-w-0">
+                        <div className="flex-1 overflow-x-auto min-w-0">
                             <GroupTabs
                                 currentGroupId={currentGroupId}
                                 onGroupChange={setCurrentGroupId}
@@ -80,7 +80,7 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
                         </div>
                     )}
 
-                    {/* Search + multi-select toggle + add */}
+                    {/* Search + multi-select toggle + add — fixed width on right */}
                     {!isMobile && (
                         <div className="flex items-center gap-2 flex-shrink-0">
                             <div className="w-56">
