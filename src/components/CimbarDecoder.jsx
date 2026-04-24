@@ -216,9 +216,15 @@ export default function CimbarDecoder({ onDecoded, onError, onProgress }) {
                     const bufSize = Module._cimbard_get_bufsize();
                     const buffer = Module._malloc(bufSize);
 
+                    // 将 imageData 复制到 WASM 堆
+                    const imageDataSize = imageData.data.length;
+                    const imageDataPtr = Module._malloc(imageDataSize);
+                    const wasmImageData = new Uint8Array(Module.HEAPU8.buffer, imageDataPtr, imageDataSize);
+                    wasmImageData.set(imageData.data);
+
                     // 扫描并解码
                     const result = Module._cimbard_scan_extract_decode(
-                        imageData.data.byteOffset,
+                        imageDataPtr,
                         imageData.width,
                         imageData.height,
                         buffer,
@@ -265,12 +271,14 @@ export default function CimbarDecoder({ onDecoded, onError, onProgress }) {
                             onDecoded?.({ filename, data: blob });
                             Module._free(decompressBuf);
                             Module._free(buffer);
+                            Module._free(imageDataPtr);
                             return;
                         }
 
                         Module._free(decompressBuf);
                     }
 
+                    Module._free(imageDataPtr);
                     Module._free(buffer);
                 } catch (err) {
                     console.error('解码错误:', err);

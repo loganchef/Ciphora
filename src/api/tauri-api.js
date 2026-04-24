@@ -6,6 +6,7 @@ import {
   readFile as readBinaryFile,
   writeFile as writeBinaryFile
 } from '@tauri-apps/plugin-fs';
+import { open as openUrl } from '@tauri-apps/plugin-shell';
 import * as XLSX from 'xlsx/dist/xlsx.full.min.js';
 
 const getMasterPassword = () => {
@@ -49,12 +50,30 @@ export const tauriAPI = {
 
   async login(password, mfaToken) {
     const result = await invoke('verify_master_password', { password });
-    if (result && mfaToken) {
-      // TODO: 验证 MFA token
-      // const mfaResult = await invoke('verify_mfa_token', { token: mfaToken });
-      // if (!mfaResult) return { success: false, message: 'MFA 验证失败' };
+    if (!result) {
+      return { success: false, message: '密码错误' };
     }
-    return result ? { success: true } : { success: false, message: '密码错误' };
+
+    // 如果提供了 MFA token，验证它
+    if (mfaToken) {
+      try {
+        const settings = await this.getSettings();
+        if (settings.success && settings.settings.mfa?.enabled && settings.settings.mfa?.secret) {
+          const mfaResult = await invoke('verify_mfa_token', {
+            secret: settings.settings.mfa.secret,
+            token: mfaToken
+          });
+          if (!mfaResult) {
+            return { success: false, message: 'MFA 验证失败' };
+          }
+        }
+      } catch (error) {
+        console.error('MFA 验证错误:', error);
+        return { success: false, message: 'MFA 验证失败' };
+      }
+    }
+
+    return { success: true };
   },
 
   async logout() {
@@ -432,9 +451,13 @@ export const tauriAPI = {
   },
 
   async openUrl(url) {
-    // TODO: 使用 Tauri shell 插件打开 URL
-    window.open(url, '_blank');
-    return { success: true };
+    try {
+      await openUrl(url);
+      return { success: true };
+    } catch (error) {
+      console.error('打开 URL 失败:', error);
+      return { success: false, message: error.message };
+    }
   },
 
   // ==================== 设置相关 ====================
