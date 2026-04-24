@@ -441,8 +441,46 @@ export const MultipleSelector = React.forwardRef(({
                                 {Object.entries(options).map(([key, dropdowns]) => {
                                     const groupOptions = dropdowns || [];
                                     if (groupOptions.length === 0) return null;
+                                    
+                                    const isGroupSelected = groupOptions.every((opt) => 
+                                        selected.some((s) => s.value === opt.value)
+                                    );
+
                                     return (
-                                        <CommandGroup key={key} heading={key} className="h-full overflow-auto">
+                                        <CommandGroup 
+                                            key={key} 
+                                            heading={
+                                                <div className="flex items-center justify-between w-full">
+                                                    <span>{key}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            let newOptions;
+                                                            if (isGroupSelected) {
+                                                                // Unselect group
+                                                                newOptions = selected.filter(s => 
+                                                                    !groupOptions.some(opt => opt.value === s.value)
+                                                                );
+                                                            } else {
+                                                                // Select group
+                                                                const toAdd = groupOptions.filter(opt => 
+                                                                    !selected.some(s => s.value === opt.value) && !opt.disable
+                                                                );
+                                                                newOptions = [...selected, ...toAdd];
+                                                            }
+                                                            setSelected(newOptions);
+                                                            onChange?.(newOptions);
+                                                        }}
+                                                        className="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded transition-colors"
+                                                    >
+                                                        {isGroupSelected ? "取消全选" : "选择全组"}
+                                                    </button>
+                                                </div>
+                                            } 
+                                            className="h-full overflow-auto"
+                                        >
                                             <>
                                                 {groupOptions.map((option) => {
                                                     const isSelected = selected.some((s) => s.value === option.value);
@@ -489,44 +527,45 @@ export const MultipleSelector = React.forwardRef(({
                                         </CommandGroup>
                                     );
                                 })}
-                                <div className="border-t border-gray-200 my-1" />
-                                <CommandItem
-                                    value="select-all"
-                                    onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                    }}
-                                    onSelect={() => {
-                                        const allOptions = Object.values(options).flat();
-                                        const allSelected = allOptions.length > 0 && allOptions.every((opt) =>
-                                            selected.some((s) => s.value === opt.value)
-                                        );
-                                        let newOptions;
-                                        if (allSelected) {
-                                            newOptions = selected.filter((s) =>
-                                                !allOptions.some((opt) => opt.value === s.value)
+                                <div className="sticky bottom-0 bg-white border-t border-gray-100 p-1">
+                                    <CommandItem
+                                        value="select-all"
+                                        onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                        }}
+                                        onSelect={() => {
+                                            const allOptions = Object.values(options).flat();
+                                            const allSelected = allOptions.length > 0 && allOptions.every((opt) =>
+                                                selected.some((s) => s.value === opt.value)
                                             );
-                                        } else {
-                                            const toAdd = allOptions.filter((opt) =>
-                                                !selected.some((s) => s.value === opt.value) && !opt.disable
-                                            );
-                                            newOptions = [...selected, ...toAdd];
-                                        }
-                                        setSelected(newOptions);
-                                        onChange?.(newOptions);
-                                    }}
-                                    className="cursor-pointer flex items-center gap-2"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={Object.values(options).flat().length > 0 && Object.values(options).flat().every((opt) =>
-                                            selected.some((s) => s.value === opt.value)
-                                        )}
-                                        readOnly
-                                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                                    />
-                                    全选
-                                </CommandItem>
+                                            let newOptions;
+                                            if (allSelected) {
+                                                newOptions = selected.filter((s) =>
+                                                    !allOptions.some((opt) => opt.value === s.value)
+                                                );
+                                            } else {
+                                                const toAdd = allOptions.filter((opt) =>
+                                                    !selected.some((s) => s.value === opt.value) && !opt.disable
+                                                );
+                                                newOptions = [...selected, ...toAdd];
+                                            }
+                                            setSelected(newOptions);
+                                            onChange?.(newOptions);
+                                        }}
+                                        className="cursor-pointer flex items-center gap-2 font-bold text-blue-600"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={Object.values(options).flat().length > 0 && Object.values(options).flat().every((opt) =>
+                                                selected.some((s) => s.value === opt.value)
+                                            )}
+                                            readOnly
+                                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                                        />
+                                        全选所有项
+                                    </CommandItem>
+                                </div>
                             </>
                         )}
                     </CommandList>

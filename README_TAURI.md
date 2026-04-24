@@ -1,26 +1,30 @@
-# 🎯 Ciphora + Tauri 2.0 + libcimbar
+fe# 🎯 Ciphora + Tauri 2.0 + libcimbar
 
 > **密码管理器** × **跨平台框架** × **高速二维码传输** = 🚀
 
 ## 🌟 特性亮点
 
 ### 📱 全平台支持
+
 - ✅ Windows / macOS / Linux（桌面端）
 - ✅ Android / iOS（移动端）
 - ✅ 一套代码，六个平台
 
 ### 🔐 企业级安全
+
 - **Argon2** 密码哈希（抗暴力破解）
 - **AES-256-GCM** 加密（军用级）
 - **TOTP** 双因素认证
 - **Rust** 内存安全
 
 ### ⚡ 超高性能
+
 - **打包体积**: ~5 MB（vs Electron 的 80 MB）
 - **内存占用**: ~50 MB（vs Electron 的 200 MB）
 - **启动速度**: <1 秒（vs Electron 的 2-3 秒）
 
 ### 🎨 libcimbar 集成
+
 - **传输速度**: 最高 106 KB/s（850 kbps）
 - **最大文件**: 33 MB（压缩后）
 - **完全离线**: 无需网络连接
@@ -33,11 +37,13 @@
 ### 1️⃣ 自动安装
 
 #### Windows（PowerShell）
+
 ```powershell
 .\scripts\setup-tauri.ps1
 ```
 
 #### macOS/Linux
+
 ```bash
 chmod +x scripts/setup-tauri.sh
 ./scripts/setup-tauri.sh
@@ -46,11 +52,13 @@ chmod +x scripts/setup-tauri.sh
 ### 2️⃣ 下载 libcimbar WASM
 
 **方法1: 在线下载（推荐）**
+
 1. 访问 [cimbar.org](https://cimbar.org)
 2. 右键"另存为"保存整个页面
 3. 提取 `cimbar.js` 和 `cimbar.wasm` 到 `public/wasm/`
 
 **方法2: GitHub Releases**
+
 1. 访问 [libcimbar/releases](https://github.com/sz3/libcimbar/releases)
 2. 下载 `cimbar_js.html`
 3. 提取 WASM 文件到 `public/wasm/`
@@ -155,12 +163,14 @@ npm run tauri:ios:dev
 ### Cimbar 数据传输
 
 **发送数据**:
+
 1. 点击"数据传输"按钮
 2. 选择"发送文件"
 3. 选择文件（最大 33MB）
 4. 屏幕显示动画二维码
 
 **接收数据**:
+
 1. 点击"数据传输"按钮
 2. 选择"接收文件"
 3. 摄像头对准发送设备屏幕
@@ -171,11 +181,13 @@ npm run tauri:ios:dev
 ## 📊 技术栈
 
 ### 前端
+
 - **React 18**: UI 框架
 - **Tailwind CSS 4**: 样式框架
 - **Vite**: 构建工具
 
 ### 后端
+
 - **Rust**: 系统编程语言
 - **Tauri 2.0**: 跨平台框架
 - **Argon2**: 密码哈希
@@ -183,6 +195,7 @@ npm run tauri:ios:dev
 - **TOTP**: 双因素认证
 
 ### 数据传输
+
 - **libcimbar**: 高速二维码传输
 - **WebAssembly**: WASM 运行时
 - **Reed Solomon**: 纠错算法
@@ -224,6 +237,7 @@ npm run tauri:ios:dev
 ## 🐛 常见问题
 
 ### Q: Rust 编译失败？
+
 ```bash
 # 更新 Rust
 rustup update
@@ -233,6 +247,7 @@ cargo clean
 ```
 
 ### Q: Android 构建失败？
+
 ```bash
 # 检查环境变量
 echo $ANDROID_HOME
@@ -243,11 +258,13 @@ cd src-tauri/gen/android
 ```
 
 ### Q: Cimbar WASM 未加载？
+
 1. 检查文件是否存在: `public/wasm/cimbar.js` 和 `cimbar.wasm`
 2. 检查浏览器控制台是否有错误
 3. 确保在 HTTPS 或 localhost 运行
 
 ### Q: 相机权限被拒绝？
+
 - **Android**: Settings > Apps > Ciphora > Permissions > Camera
 - **iOS**: Settings > Ciphora > Camera
 - **浏览器**: 地址栏左侧相机图标 > 允许
@@ -302,7 +319,3 @@ MIT License - 详见 [LICENSE](./LICENSE)
 ```bash
 npm run tauri:dev
 ```
-
-
-
-

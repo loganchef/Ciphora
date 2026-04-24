@@ -1,25 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import PasswordCard from './PasswordCard';
 import SearchBox from './SearchBox';
 import GroupTabs from './GroupTabs';
 import GroupManageModal from './GroupManageModal';
 import { useGroups } from '../hooks/useGroups';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useMobile } from '../hooks/useMobile';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from './ui/select';
+import { useTranslation } from 'react-i18next';
 
-const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPassword, onDeletePassword, onRefresh, hideSensitiveButtons = false }) => {
+const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPassword, onDeletePassword, onRefresh, hideSensitiveButtons = false, settings = null }) => {
+    const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
     const { isMobile } = useMobile();
-    const { groups, currentGroupId, setCurrentGroupId, addGroup, updateGroup, deleteGroup } = useGroups();
+    const { groups, addGroup, updateGroup, deleteGroup } = useGroups();
+    const [selectedGroupIds, setSelectedGroupIds] = useState([]); // [] = all
     const [showGroupModal, setShowGroupModal] = useState(false);
-    const [selectionMode, setSelectionMode] = useState(false);
-    const [selectedIds, setSelectedIds] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const filteredByGroup = passwords.filter(password => {
-        if (currentGroupId === 'all') return true;
-        if (currentGroupId === 'ungrouped') return !password.groupId;
-        return password.groupId === currentGroupId;
+        if (selectedGroupIds.length === 0) return true;
+        return selectedGroupIds.some(id => {
+            if (id === 'ungrouped') return !password.groupId;
+            return password.groupId === id;
+        });
     });
 
     const filteredPasswords = filteredByGroup.filter(password =>
@@ -29,26 +32,97 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
         (password.type?.toLowerCase() || '').includes(searchQuery.toLowerCase())
     );
 
+    // 排序逻辑
+    const sortedPasswords = useMemo(() => {
+        const order = settings?.ui?.cardOrder || 'usage';
+        return [...filteredPasswords].sort((a, b) => {
+            switch (order) {
+                case 'usage':
+                    return (b.usageCount || 0) - (a.usageCount || 0);
+                case 'createdAt':
+                    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+                case 'updatedAt':
+                    return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+                case 'username':
+                    return (a.username || '').localeCompare(b.username || '');
+                default:
+                    return 0;
+            }
+        });
+    }, [filteredPasswords, settings?.ui?.cardOrder]);
+
+    // 分页逻辑
+    const paginationEnabled = settings?.ui?.pagination?.enabled || false;
+    const pageSize = settings?.ui?.pagination?.pageSize || 20;
+    
+    const totalPages = Math.ceil(sortedPasswords.length / pageSize);
+    const paginatedPasswords = useMemo(() => {
+        if (!paginationEnabled) return sortedPasswords;
+        const start = (currentPage - 1) * pageSize;
+        return sortedPasswords.slice(start, start + pageSize);
+    }, [sortedPasswords, paginationEnabled, currentPage, pageSize]);
+
+    // 当搜索或过滤变化时重置页码
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, selectedGroupIds]);
+
     const handleDelete = (password) => {
-        if (confirm(`确定要删除 "${password.website}" 的记录吗？此操作无法撤销。`)) {
+        if (confirm(t('vault.deleteConfirm', { website: password.website }))) {
             onDeletePassword(password.id);
         }
     };
 
-    const handleBatchMove = async (targetGroupId) => {
-        try {
-            await window.api.movePasswordsToGroup(selectedIds, targetGroupId === 'ungrouped' ? null : targetGroupId);
-            setSelectionMode(false);
-            setSelectedIds([]);
-            if (onRefresh) await onRefresh();
-        } catch (error) {
-            alert('批量移动失败: ' + error.message);
-        }
-    };
+    const renderPagination = () => {
+        if (!paginationEnabled || totalPages <= 1) return null;
 
-    const toggleSelection = (id) => {
-        setSelectedIds(prev =>
-            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        return (
+            <div className="flex items-center justify-center gap-2 mt-8 pb-12">
+                <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg bg-white border border-gray-200 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                >
+                    <ChevronLeftIcon className="w-5 h-5" />
+                </button>
+                
+                <div className="flex items-center gap-1">
+                    {[...Array(totalPages)].map((_, i) => {
+                        const page = i + 1;
+                        // 只显示当前页附近的页码
+                        if (totalPages > 7) {
+                            if (page !== 1 && page !== totalPages && Math.abs(page - currentPage) > 1) {
+                                if (page === 2 || page === totalPages - 1) {
+                                    return <span key={page} className="px-1 text-gray-400">...</span>;
+                                }
+                                return null;
+                            }
+                        }
+                        
+                        return (
+                            <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`w-10 h-10 rounded-lg border text-sm font-medium transition-all ${
+                                    currentPage === page
+                                        ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+                                }`}
+                            >
+                                {page}
+                            </button>
+                        );
+                    }).filter(Boolean)}
+                </div>
+
+                <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg bg-white border border-gray-200 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                >
+                    <ChevronRightIcon className="w-5 h-5" />
+                </button>
+            </div>
         );
     };
 
@@ -59,20 +133,18 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
                 <div className={`max-w-7xl mx-auto ${isMobile ? 'space-y-3' : 'flex items-center gap-3'}`}>
                     {/* Group tabs — occupy remaining space */}
                     {isMobile ? (
-                        <div className="overflow-x-auto">
-                            <GroupTabs
-                                currentGroupId={currentGroupId}
-                                onGroupChange={setCurrentGroupId}
-                                groups={groups}
-                                passwords={passwords}
-                                onManageGroups={() => setShowGroupModal(true)}
-                            />
-                        </div>
+                        <GroupTabs
+                            selectedGroupIds={selectedGroupIds}
+                            onGroupFilterChange={setSelectedGroupIds}
+                            groups={groups}
+                            passwords={passwords}
+                            onManageGroups={() => setShowGroupModal(true)}
+                        />
                     ) : (
-                        <div className="flex-1 overflow-x-auto min-w-0">
+                        <div className="flex-1 min-w-0">
                             <GroupTabs
-                                currentGroupId={currentGroupId}
-                                onGroupChange={setCurrentGroupId}
+                                selectedGroupIds={selectedGroupIds}
+                                onGroupFilterChange={setSelectedGroupIds}
                                 groups={groups}
                                 passwords={passwords}
                                 onManageGroups={() => setShowGroupModal(true)}
@@ -80,20 +152,11 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
                         </div>
                     )}
 
-                    {/* Search + multi-select toggle + add — fixed width on right */}
+                    {/* Search + add — fixed width on right */}
                     {!isMobile && (
                         <div className="flex items-center gap-2 flex-shrink-0">
                             <div className="w-96">
                                 <SearchBox value={searchQuery} onChange={setSearchQuery} />
-                            </div>
-                            <div
-                                onClick={() => { setSelectionMode(!selectionMode); setSelectedIds([]); }}
-                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${selectionMode
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                            >
-                                {selectionMode ? '取消' : '多选'}
                             </div>
                             <div
                                 onClick={onAddPassword}
@@ -101,7 +164,7 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
                                 className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                             >
                                 <PlusIcon className="w-4 h-4" />
-                                <span>{isLoading ? '加载中...' : '添加'}</span>
+                                <span>{isLoading ? t('common.loading') : t('common.add')}</span>
                             </div>
                         </div>
                     )}
@@ -118,7 +181,7 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
                                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                             >
                                 <PlusIcon className="w-4 h-4" />
-                                <span>{isLoading ? '加载中...' : '添加'}</span>
+                                <span>{isLoading ? t('common.loading') : t('common.add')}</span>
                             </button>
                         </div>
                     )}
@@ -131,39 +194,34 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
                     {isLoading ? (
                         <div className="text-center py-12">
                             <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-gray-600">加载中...</p>
+                            <p className="text-gray-600">{t('common.loading')}</p>
                         </div>
-                    ) : filteredPasswords.length > 0 ? (
-                        <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}`}>
-                            {filteredPasswords.map((password) => (
-                                <div key={password.id} className="relative">
-                                    {selectionMode && (
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedIds.includes(password.id)}
-                                            onChange={() => toggleSelection(password.id)}
-                                            className="absolute top-2 left-2 z-10 w-5 h-5 cursor-pointer"
+                    ) : paginatedPasswords.length > 0 ? (
+                        <>
+                            <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}`}>
+                                {paginatedPasswords.map((password) => (
+                                    <div key={password.id} className="relative h-full">
+                                        <PasswordCard
+                                            password={password}
+                                            onEdit={onEditPassword}
+                                            onDelete={handleDelete}
+                                            hideSensitiveButtons={hideSensitiveButtons}
                                         />
-                                    )}
-                                    <PasswordCard
-                                        password={password}
-                                        onEdit={onEditPassword}
-                                        onDelete={handleDelete}
-                                        hideSensitiveButtons={hideSensitiveButtons}
-                                    />
-                                </div>
-                            ))}
-                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {renderPagination()}
+                        </>
                     ) : (
                         <div className="text-center py-12">
                             <div className="w-24 h-24 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <PlusIcon className="w-12 h-12 text-gray-400" />
                             </div>
                             <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                                {searchQuery ? '没有找到匹配的密码' : '还没有保存任何密码'}
+                                {searchQuery ? t('vault.noResults') : t('vault.noPasswords')}
                             </h3>
                             <p className="text-gray-500 mb-6">
-                                {searchQuery ? '尝试使用不同的搜索关键词' : '点击"添加密码"按钮开始创建您的第一个密码条目'}
+                                {searchQuery ? t('vault.noResultsDesc') : t('vault.noPasswordsDesc')}
                             </p>
                             {!searchQuery && (
                                 <button
@@ -171,43 +229,13 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
                                     className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
                                 >
                                     <PlusIcon className="w-5 h-5" />
-                                    <span>添加第一个密码</span>
+                                    <span>{t('vault.addFirstPassword')}</span>
                                 </button>
                             )}
                         </div>
                     )}
                 </div>
             </div>
-
-            {/* Batch move toolbar — docked at bottom when active */}
-            {selectionMode && selectedIds.length > 0 && (
-                <div className="flex-shrink-0 bg-white border-t shadow-lg px-4 py-3">
-                    <div className="flex items-center justify-between max-w-7xl mx-auto">
-                        <span className="text-sm text-gray-600">{selectedIds.length} 项已选择</span>
-                        <div className="flex gap-2">
-                            <Select onValueChange={handleBatchMove}>
-                                <SelectTrigger className="w-40">
-                                    <SelectValue placeholder="移动到..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="ungrouped">📂 未分组</SelectItem>
-                                    {groups.map(group => (
-                                        <SelectItem key={group.id} value={group.id}>
-                                            {group.icon} {group.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <button
-                                onClick={() => { setSelectionMode(false); setSelectedIds([]); }}
-                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
-                            >
-                                取消
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <GroupManageModal
                 isOpen={showGroupModal}

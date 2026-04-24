@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import Icon from './Icon';
+import { useTranslation } from 'react-i18next';
 
 const SecurityModal = ({ isOpen, onClose }) => {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('overview');
 
     if (!isOpen) return null;
 
     const tabs = [
-        { id: 'overview', name: '安全概览', icon: 'System/shield-check-fill' },
-        { id: 'encryption', name: '加密原理', icon: 'System/lock-fill' },
-        { id: 'architecture', name: '系统架构', icon: 'System/cpu-fill' },
+        { id: 'overview', name: t('modals.security.tabs.overview'), icon: 'System/shield-check-fill' },
+        { id: 'encryption', name: t('modals.security.tabs.encryption'), icon: 'System/lock-fill' },
+        { id: 'architecture', name: t('modals.security.tabs.architecture'), icon: 'Device/cpu-fill' },
     ];
 
     const renderOverview = () => (
@@ -24,12 +26,12 @@ const SecurityModal = ({ isOpen, onClose }) => {
                             <Icon path="System/shield-check-fill" className="w-6 h-6 brightness-0 invert" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold">零信任本地加密</h3>
-                            <p className="text-blue-200 text-sm">所有数据仅在本地处理，永不上传</p>
+                            <h3 className="text-lg font-bold">{t('modals.security.overview.title')}</h3>
+                            <p className="text-blue-200 text-sm">{t('modals.security.overview.subtitle')}</p>
                         </div>
                     </div>
                     <p className="text-sm text-blue-100 leading-relaxed">
-                        Ciphora 采用军事级加密算法，主密码永远不会以明文形式存储，即使应用源代码完全公开，攻击者也无法在不知道主密码的情况下解密你的数据。
+                        {t('modals.security.overview.desc')}
                     </p>
                 </div>
             </div>
@@ -40,41 +42,41 @@ const SecurityModal = ({ isOpen, onClose }) => {
                     <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mb-3">
                         <Icon path="System/lock-fill" className="w-4 h-4 brightness-0 invert" />
                     </div>
-                    <h4 className="font-semibold text-gray-900 text-sm mb-1">AES-256-GCM</h4>
-                    <p className="text-xs text-gray-600">带认证标签的加密模式，同时保证机密性与完整性</p>
+                    <h4 className="font-semibold text-gray-900 text-sm mb-1">{t('modals.security.features.aes.name')}</h4>
+                    <p className="text-xs text-gray-600">{t('modals.security.features.aes.desc')}</p>
                 </div>
                 <div className="bg-gradient-to-br from-green-50 to-green-100/50 border border-green-200 rounded-xl p-4">
                     <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mb-3">
                         <Icon path="System/shield-keyhole-fill" className="w-4 h-4 brightness-0 invert" />
                     </div>
-                    <h4 className="font-semibold text-gray-900 text-sm mb-1">Argon2id KDF</h4>
-                    <p className="text-xs text-gray-600">抗 GPU 暴力破解，内存硬性密钥派生函数</p>
+                    <h4 className="font-semibold text-gray-900 text-sm mb-1">{t('modals.security.features.argon2.name')}</h4>
+                    <p className="text-xs text-gray-600">{t('modals.security.features.argon2.desc')}</p>
                 </div>
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200 rounded-xl p-4">
                     <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center mb-3">
                         <Icon path="Device/cpu-fill" className="w-4 h-4 brightness-0 invert" />
                     </div>
-                    <h4 className="font-semibold text-gray-900 text-sm mb-1">设备绑定</h4>
-                    <p className="text-xs text-gray-600">每台设备唯一 ID 参与密钥派生，防止跨设备暴力破解</p>
+                    <h4 className="font-semibold text-gray-900 text-sm mb-1">{t('modals.security.features.deviceBinding.name')}</h4>
+                    <p className="text-xs text-gray-600">{t('modals.security.features.deviceBinding.desc')}</p>
                 </div>
                 <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-200 rounded-xl p-4">
                     <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center mb-3">
                         <Icon path="System/shield-check-fill" className="w-4 h-4 brightness-0 invert" />
                     </div>
-                    <h4 className="font-semibold text-gray-900 text-sm mb-1">TOTP 双因素</h4>
-                    <p className="text-xs text-gray-600">内置 TOTP 生成与验证，支持双因素安全登录</p>
+                    <h4 className="font-semibold text-gray-900 text-sm mb-1">{t('modals.security.features.totp.name')}</h4>
+                    <p className="text-xs text-gray-600">{t('modals.security.features.totp.desc')}</p>
                 </div>
             </div>
 
             {/* Security Commitments */}
             <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">安全承诺</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">{t('modals.security.commitments.title')}</h3>
                 <div className="space-y-2.5">
                     {[
-                        { icon: 'System/lock-password-fill', text: '主密码从不以明文存储，仅在内存中短暂存在用于解密' },
-                        { icon: 'System/wifi-off-fill', text: '完全离线运行，所有加密解密均在本地完成，不依赖网络' },
-                        { icon: 'System/shield-keyhole-fill', text: '每条记录使用独立随机 Nonce，相同内容加密结果不同' },
-                        { icon: 'Development/code-box-fill', text: '代码完全开源，加密算法透明可审计，拒绝安全通过混淆' },
+                        { icon: 'System/lock-password-fill', text: t('modals.security.commitments.item1') },
+                        { icon: 'System/wifi-off-fill', text: t('modals.security.commitments.item2') },
+                        { icon: 'System/shield-keyhole-fill', text: t('modals.security.commitments.item3') },
+                        { icon: 'Development/code-box-fill', text: t('modals.security.commitments.item4') },
                     ].map((item, i) => (
                         <div key={i} className="flex items-start gap-3">
                             <Icon path={item.icon} className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -90,39 +92,39 @@ const SecurityModal = ({ isOpen, onClose }) => {
         <div className="space-y-5">
             {/* Encryption Flow */}
             <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">加密流程</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">{t('modals.security.encryption.title')}</h3>
                 <div className="space-y-2">
                     {[
                         {
                             step: 1,
                             color: 'blue',
                             icon: 'System/login-box-fill',
-                            title: '主密码输入',
-                            desc: '用户输入主密码，系统获取设备唯一 ID',
+                            title: t('modals.security.encryption.step1.title'),
+                            desc: t('modals.security.encryption.step1.desc'),
                             detail: 'masterPassword + deviceId',
                         },
                         {
                             step: 2,
                             color: 'green',
                             icon: 'System/shield-keyhole-fill',
-                            title: 'Argon2id 密钥派生',
-                            desc: '结合随机盐值通过 Argon2id 派生 256 位对称密钥',
+                            title: t('modals.security.encryption.step2.title'),
+                            desc: t('modals.security.encryption.step2.desc'),
                             detail: 'Argon2id(password, salt+deviceId) → 32 bytes key',
                         },
                         {
                             step: 3,
                             color: 'purple',
                             icon: 'System/lock-fill',
-                            title: 'AES-256-GCM 加密',
-                            desc: '生成随机 96-bit Nonce，加密密码数据',
+                            title: t('modals.security.encryption.step3.title'),
+                            desc: t('modals.security.encryption.step3.desc'),
                             detail: 'AES-256-GCM(key, nonce, plaintext) → ciphertext + tag',
                         },
                         {
                             step: 4,
                             color: 'orange',
                             icon: 'Document/file-shield-2-fill',
-                            title: 'Base64 持久化',
-                            desc: '将密文、Nonce、盐一同编码后存储到本地文件',
+                            title: t('modals.security.encryption.step4.title'),
+                            desc: t('modals.security.encryption.step4.desc'),
                             detail: 'Base64(salt || nonce || tag || ciphertext) → vault.json',
                         },
                     ].map(({ step, color, icon, title, desc, detail }) => (
@@ -147,7 +149,7 @@ const SecurityModal = ({ isOpen, onClose }) => {
 
             {/* Technical Specs */}
             <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">算法参数</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">{t('modals.security.encryption.specs.title')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="border border-gray-200 rounded-xl p-4 bg-white">
                         <div className="flex items-center gap-2 mb-3">
@@ -158,7 +160,7 @@ const SecurityModal = ({ isOpen, onClose }) => {
                         </div>
                         <div className="space-y-1.5 text-xs text-gray-600">
                             <div className="flex justify-between">
-                                <span className="text-gray-500">密钥长度</span>
+                                <span className="text-gray-500">{t('modals.security.encryption.specs.keyLength')}</span>
                                 <span className="font-medium text-gray-900">256 bit</span>
                             </div>
                             <div className="flex justify-between">
@@ -166,12 +168,12 @@ const SecurityModal = ({ isOpen, onClose }) => {
                                 <span className="font-medium text-gray-900">随机 96 bit</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Tag 长度</span>
+                                <span className="text-gray-500">{t('modals.security.encryption.specs.tagLength')}</span>
                                 <span className="font-medium text-gray-900">128 bit</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">安全属性</span>
-                                <span className="font-medium text-green-600">AEAD 认证加密</span>
+                                <span className="text-gray-500">{t('modals.security.encryption.specs.securityProps')}</span>
+                                <span className="font-medium text-green-600">{t('modals.security.encryption.specs.aead')}</span>
                             </div>
                         </div>
                     </div>
@@ -184,20 +186,20 @@ const SecurityModal = ({ isOpen, onClose }) => {
                         </div>
                         <div className="space-y-1.5 text-xs text-gray-600">
                             <div className="flex justify-between">
-                                <span className="text-gray-500">内存用量</span>
+                                <span className="text-gray-500">{t('modals.security.encryption.specs.memoryUsage')}</span>
                                 <span className="font-medium text-gray-900">64 MB</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">迭代次数</span>
+                                <span className="text-gray-500">{t('modals.security.encryption.specs.iterations')}</span>
                                 <span className="font-medium text-gray-900">≥ 3</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">盐值</span>
+                                <span className="text-gray-500">{t('modals.security.encryption.specs.salt')}</span>
                                 <span className="font-medium text-gray-900">随机 128 bit</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">输出</span>
-                                <span className="font-medium text-green-600">32 字节对称密钥</span>
+                                <span className="text-gray-500">{t('modals.security.encryption.specs.output')}</span>
+                                <span className="font-medium text-green-600">{t('modals.security.encryption.specs.keyOutput')}</span>
                             </div>
                         </div>
                     </div>
@@ -206,13 +208,13 @@ const SecurityModal = ({ isOpen, onClose }) => {
 
             {/* Attack Resistance */}
             <div className="bg-red-50 border border-red-100 rounded-xl p-4">
-                <h3 className="text-sm font-semibold text-red-800 mb-3">攻击防护</h3>
+                <h3 className="text-sm font-semibold text-red-800 mb-3">{t('modals.security.attacks.title')}</h3>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                     {[
-                        { attack: '暴力破解', protection: 'Argon2id 高内存消耗', icon: 'System/shield-flash-fill' },
-                        { attack: '字典攻击', protection: '随机盐 + 设备 ID 绑定', icon: 'System/shield-keyhole-fill' },
-                        { attack: '数据篡改', protection: 'GCM 认证标签检测', icon: 'System/shield-check-fill' },
-                        { attack: '彩虹表', protection: '每次派生唯一盐值', icon: 'System/shield-star-fill' },
+                        { attack: t('modals.security.attacks.bruteforce'), protection: t('modals.security.attacks.bruteforceProt'), icon: 'System/shield-flash-fill' },
+                        { attack: t('modals.security.attacks.dictionary'), protection: t('modals.security.attacks.dictionaryProt'), icon: 'System/shield-keyhole-fill' },
+                        { attack: t('modals.security.attacks.tamper'), protection: t('modals.security.attacks.tamperProt'), icon: 'System/shield-check-fill' },
+                        { attack: t('modals.security.attacks.rainbow'), protection: t('modals.security.attacks.rainbowProt'), icon: 'System/shield-star-fill' },
                     ].map(({ attack, protection, icon }, i) => (
                         <div key={i} className="flex items-center gap-2 bg-white rounded-lg p-2.5">
                             <Icon path={icon} className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
@@ -231,17 +233,17 @@ const SecurityModal = ({ isOpen, onClose }) => {
         <div className="space-y-5">
             {/* Stack Diagram */}
             <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">技术栈</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">{t('modals.security.architecture.title')}</h3>
                 <div className="space-y-2">
                     {/* Frontend */}
                     <div className="border-2 border-blue-300 rounded-xl overflow-hidden">
                         <div className="bg-blue-600 px-4 py-2 flex items-center gap-2">
                             <Icon path="Development/code-box-fill" className="w-3.5 h-3.5 brightness-0 invert" />
-                            <span className="text-white text-xs font-semibold tracking-wide uppercase">前端层 · React + Vite</span>
+                            <span className="text-white text-xs font-semibold tracking-wide uppercase">{t('modals.security.architecture.frontend')}</span>
                         </div>
                         <div className="bg-blue-50 p-3">
                             <div className="grid grid-cols-4 gap-2">
-                                {['登录认证', '密码管理', 'MFA 验证', '导入导出'].map(name => (
+                                {[t('modals.security.architecture.auth'), t('modals.security.architecture.pwdMgr'), t('modals.security.architecture.mfa'), t('modals.security.architecture.importExport')].map(name => (
                                     <div key={name} className="bg-white rounded-lg px-2 py-2 text-center text-xs text-gray-700 shadow-sm border border-blue-100">
                                         {name}
                                     </div>
@@ -270,11 +272,11 @@ const SecurityModal = ({ isOpen, onClose }) => {
                     <div className="border-2 border-purple-300 rounded-xl overflow-hidden">
                         <div className="bg-purple-700 px-4 py-2 flex items-center gap-2">
                             <Icon path="Development/bug-fill" className="w-3.5 h-3.5 brightness-0 invert" />
-                            <span className="text-white text-xs font-semibold tracking-wide uppercase">后端层 · Rust (Tauri)</span>
+                            <span className="text-white text-xs font-semibold tracking-wide uppercase">{t('modals.security.architecture.backend')}</span>
                         </div>
                         <div className="bg-purple-50 p-3">
                             <div className="grid grid-cols-3 gap-2">
-                                {['认证服务', '加密引擎', '密码存储', 'MFA 服务', '分组管理', '备份恢复'].map(name => (
+                                {[t('modals.security.architecture.authService'), t('modals.security.architecture.cryptoEngine'), t('modals.security.architecture.pwdStorage'), t('modals.security.architecture.mfaService'), t('modals.security.architecture.groupMgr'), t('modals.security.architecture.backupRestore')].map(name => (
                                     <div key={name} className="bg-white rounded-lg px-2 py-2 text-center text-xs text-gray-700 shadow-sm border border-purple-100">
                                         {name}
                                     </div>
@@ -303,14 +305,14 @@ const SecurityModal = ({ isOpen, onClose }) => {
                     <div className="border-2 border-orange-300 rounded-xl overflow-hidden">
                         <div className="bg-orange-600 px-4 py-2 flex items-center gap-2">
                             <Icon path="Document/file-shield-2-fill" className="w-3.5 h-3.5 brightness-0 invert" />
-                            <span className="text-white text-xs font-semibold tracking-wide uppercase">存储层 · 本地加密文件</span>
+                            <span className="text-white text-xs font-semibold tracking-wide uppercase">{t('modals.security.architecture.storage')}</span>
                         </div>
                         <div className="bg-orange-50 p-3">
                             <div className="grid grid-cols-3 gap-2">
                                 {[
-                                    { name: 'vault.json', desc: '加密密码库' },
-                                    { name: 'settings.json', desc: '应用配置' },
-                                    { name: 'groups.json', desc: '分组数据' },
+                                    { name: 'vault.json', desc: t('modals.security.architecture.vaultFile') },
+                                    { name: 'settings.json', desc: t('modals.security.architecture.settingsFile') },
+                                    { name: 'groups.json', desc: t('modals.security.architecture.groupsFile') },
                                 ].map(({ name, desc }) => (
                                     <div key={name} className="bg-white rounded-lg p-2 text-center shadow-sm border border-orange-100">
                                         <div className="text-xs font-mono text-orange-700">{name}</div>
@@ -325,31 +327,31 @@ const SecurityModal = ({ isOpen, onClose }) => {
 
             {/* Design Principles */}
             <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">设计原则</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">{t('modals.security.principles.title')}</h3>
                 <div className="grid grid-cols-2 gap-3">
                     {[
                         {
                             icon: 'System/home-wifi-fill',
-                            title: '完全本地化',
-                            desc: '不依赖任何网络服务，所有操作在设备上完成',
+                            title: t('modals.security.principles.local.title'),
+                            desc: t('modals.security.principles.local.desc'),
                             color: 'blue',
                         },
                         {
                             icon: 'Development/bug-fill',
-                            title: 'Rust 内存安全',
-                            desc: '后端使用 Rust 语言，编译期消除内存漏洞',
+                            title: t('modals.security.principles.rust.title'),
+                            desc: t('modals.security.principles.rust.desc'),
                             color: 'orange',
                         },
                         {
                             icon: 'System/shield-user-fill',
-                            title: '最小权限',
-                            desc: 'Tauri 严格限制前端对系统资源的访问权限',
+                            title: t('modals.security.principles.leastPriv.title'),
+                            desc: t('modals.security.principles.leastPriv.desc'),
                             color: 'purple',
                         },
                         {
                             icon: 'System/shield-flash-fill',
-                            title: '纵深防御',
-                            desc: '多层安全机制：加密 + 认证 + 设备绑定',
+                            title: t('modals.security.principles.defense.title'),
+                            desc: t('modals.security.principles.defense.desc'),
                             color: 'green',
                         },
                     ].map(({ icon, title, desc, color }) => (
@@ -376,8 +378,8 @@ const SecurityModal = ({ isOpen, onClose }) => {
                             <Icon path="System/shield-check-fill" className="w-4 h-4 brightness-0 invert" />
                         </div>
                         <div>
-                            <h2 className="text-base font-semibold text-gray-900">安全加密原理</h2>
-                            <p className="text-xs text-gray-500">Ciphora 安全架构说明</p>
+                            <h2 className="text-base font-semibold text-gray-900">{t('modals.security.title')}</h2>
+                            <p className="text-xs text-gray-500">{t('modals.security.subtitle')}</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
@@ -417,7 +419,7 @@ const SecurityModal = ({ isOpen, onClose }) => {
                         onClick={onClose}
                         className="px-5 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                        关闭
+                        {t('common.close')}
                     </button>
                 </div>
             </div>

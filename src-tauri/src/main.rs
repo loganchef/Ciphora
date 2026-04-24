@@ -14,6 +14,7 @@ use service::app_state as app_state_service;
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
@@ -69,6 +70,7 @@ fn main() {
             
             // 系统
             get_app_info,
+            get_system_locale,
 
             // 分组管理
             get_groups,
@@ -77,6 +79,7 @@ fn main() {
             delete_group,
             reorder_groups,
             move_passwords_to_group,
+            increment_usage_count,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

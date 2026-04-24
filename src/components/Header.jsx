@@ -6,8 +6,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { useMobile } from '../hooks/useMobile';
+import { useTranslation } from 'react-i18next';
 
 const Header = ({ onLogout, currentView = 'main', onViewChange }) => {
+    const { t } = useTranslation();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { isMobile } = useMobile();
 
@@ -45,15 +47,15 @@ const Header = ({ onLogout, currentView = 'main', onViewChange }) => {
                                     <TabsList variant="line" className="w-auto grid grid-cols-3 gap-6 border-none">
                                         <TabsTrigger tabValue="vault" className="mx-1">
                                             <HomeIcon className="w-4 h-4 mr-2" />
-                                            保险库
+                                            {t('header.vault')}
                                         </TabsTrigger>
                                         <TabsTrigger tabValue="dashboard" className="mx-1">
                                             <ShieldCheckIcon className="w-4 h-4 mr-2" />
-                                            操作面板
+                                            {t('header.dashboard')}
                                         </TabsTrigger>
                                         <TabsTrigger tabValue="settings" className="mx-1">
                                             <CogIcon className="w-4 h-4 mr-2" />
-                                            设置
+                                            {t('settings.title')}
                                         </TabsTrigger>
                                     </TabsList>
                                 </Tabs>
@@ -82,7 +84,7 @@ const Header = ({ onLogout, currentView = 'main', onViewChange }) => {
                                     <polyline points="16 17 21 12 16 7"></polyline>
                                     <line x1="21" y1="12" x2="9" y2="12"></line>
                                 </svg>
-                                <span className="hidden sm:block text-sm font-medium">退出</span>
+                                <span className="hidden sm:block text-sm font-medium">{t('header.logout')}</span>
                             </button>
                         </div>
                     </div>
@@ -94,4 +96,4 @@ const Header = ({ onLogout, currentView = 'main', onViewChange }) => {
     );
 };
 
-export default Header; 
+export default Header;

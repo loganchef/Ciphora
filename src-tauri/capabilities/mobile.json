@@ -8,6 +8,7 @@
     "fs:default",
     "dialog:default",
     "shell:default",
+    "os:default",
     {
       "identifier": "fs:allow-app-read",
       "allow": [

@@ -1,0 +1,638 @@
+{
+  "common": {
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "confirm": "Confirm",
+    "search": "Search",
+    "loading": "Loading...",
+    "close": "Close",
+    "copy": "Copy",
+    "copied": "Copied",
+    "manage": "Manage",
+    "all": "All",
+    "ungrouped": "Ungrouped",
+    "continue": "Continue",
+    "error": "Error",
+    "importSuccess": "Import successful!",
+    "exportSuccess": "Export successful!",
+    "backupSuccess": "Backup created successfully!",
+    "restoreSuccess": "Restore successful!",
+    "updateSuccess": "Update successful",
+    "deleteSuccess": "Delete successful",
+    "saving": "Saving...",
+    "unknown": "Unknown",
+    "templateDownloadSuccess": "Template downloaded successfully",
+    "fileTypes": {
+      "excel": "Excel File",
+      "csv": "CSV File",
+      "ciphora": "Ciphora Backup File"
+    },
+    "strengths": {
+      "weak": "Weak",
+      "medium": "Medium",
+      "strong": "Strong",
+      "veryStrong": "Very Strong"
+    },
+    "suggestion": "Suggestion",
+    "qrCodeAnalysis": "QR Code Analysis",
+    "pasteInstructions": "Direct Paste: Paste text or image in the input box, images will be auto-parsed",
+    "selectImageInstructions": "Select Image: Choose an image containing a QR code from files",
+    "newAccount": "New Account",
+    "unnamed": "Unnamed",
+    "optional": "Optional"
+  },
+  "dataTypes": {
+    "password": "Password",
+    "mfa": "MFA Key",
+    "base64": "Base64 Data",
+    "string": "String",
+    "json": "JSON"
+  },
+  "fields": {
+    "website": "Website/App Name",
+    "url": "URL (Optional)",
+    "urlSuffix": "Login Suffix (Optional)",
+    "showUrl": "Show URL on card",
+    "username": "Username/Identifier",
+    "password": "Password",
+    "passwordStrength": "Password Strength",
+    "secret": "MFA Key",
+    "base64Data": "Base64 Data",
+    "stringData": "String Data",
+    "jsonData": "JSON Data",
+    "notes": "Notes (Optional)",
+    "group": "Group (Optional)",
+    "dataType": "Data Type",
+    "selectGroup": "Select Group",
+    "totpCode": "TOTP Code",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At"
+  },
+  "placeholders": {
+    "website": {
+      "password": "e.g., github.com / email account",
+      "mfa": "e.g., Google / Microsoft Authenticator",
+      "base64": "e.g., certificate / key file",
+      "string": "e.g., API Key / Token",
+      "json": "e.g., config / data file"
+    },
+    "username": {
+      "password": "Enter username or email",
+      "base64": "Enter file name or ID",
+      "string": "Enter data ID or name",
+      "json": "Enter config name or ID"
+    },
+    "password": "Enter password",
+    "secret": "Enter Base32 format MFA secret",
+    "base64Data": "Enter or paste Base64 encoded data",
+    "stringData": "Enter string data to store",
+    "jsonData": "Enter JSON data, e.g., {\"key\": \"value\"}",
+    "notes": "Add any notes",
+    "search": "Search website, username or description...",
+    "url": "e.g., https://www.example.com",
+    "urlSuffix": "e.g., /login or /auth",
+    "dataType": "Select Data Type"
+  },
+  "actions": {
+    "generate": "Generate",
+    "show": "Show",
+    "hide": "Hide",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "scanQR": "Scan QR Code",
+    "uploadImage": "Select Image",
+    "saveRecord": "Save Record",
+    "saveChanges": "Save Changes",
+    "createGroup": "Create Group",
+    "cancelEdit": "Cancel Edit",
+    "open": "Open",
+    "qrCode": "QR Code",
+    "showInModal": "Show in Modal",
+    "copyRaw": "Copy Raw",
+    "importData": "Import Data",
+    "exportData": "Export Data",
+    "downloadTemplate": "Download Template",
+    "startImport": "Start Import",
+    "startExport": "Start Export"
+  },
+  "errors": {
+    "unsupportedFileType": "Unsupported file type",
+    "importFailed": "Import failed",
+    "exportFailed": "Export failed",
+    "addFailed": "Add failed",
+    "addError": "An error occurred during addition",
+    "updateFailed": "Update failed",
+    "deleteFailed": "Delete failed",
+    "readFailed": "Failed to read file",
+    "invalidMfaKey": "No valid MFA secret detected, ensure QR code is in correct format",
+    "noQrCodeDetected": "No QR code detected, ensure the image contains a clear QR code",
+    "qrCodeParseFailed": "QR code parsing failed, please try again or enter secret manually",
+    "noQrCodeInFile": "No QR code detected, please select an image containing a QR code",
+    "fileParseFailed": "File parsing failed, please try again",
+    "qrCodeGenerateFailed": "Failed to generate QR code, please try again",
+    "templateNotSupported": "Template download not supported for this format",
+    "templateGenerateFailed": "Failed to generate template"
+  },
+  "vault": {
+    "deleteConfirm": "Are you sure you want to delete {{website}}? This action cannot be undone.",
+    "noResults": "No results found",
+    "noResultsDesc": "No entries matched your search criteria.",
+    "noPasswords": "Vault is empty",
+    "noPasswordsDesc": "Start adding your first password entry, it will be stored with maximum encryption.",
+    "addFirstPassword": "Add your first entry",
+    "addNewRecord": "Add New Record",
+    "editRecord": "Edit Record",
+    "totpQrCode": "TOTP QR Code",
+    "totpQrCodeDesc": "Scan this QR code with Google Authenticator or similar apps",
+    "base64FullDisplay": "Base64 Full Display",
+    "jsonFullDisplay": "JSON Full Display"
+  },
+  "groups": {
+    "edit": "Edit Group",
+    "manage": "Manage Groups",
+    "namePlaceholder": "Group name, e.g., 'Work', 'Personal'",
+    "bgColor": "Tag Background",
+    "iconColor": "Icon Color",
+    "icon": "Group Icon",
+    "existingGroups": "Existing Groups",
+    "noGroups": "No groups yet, create your first one",
+    "deleteConfirm": "Are you sure you want to delete this group? Passwords will be moved to 'Ungrouped'.",
+    "allGroups": "All Groups",
+    "selectCount": "{{count}} selected",
+    "manageGroups": "Manage Groups",
+    "categories": {
+      "System": "System",
+      "Business": "Business",
+      "Buildings": "Buildings",
+      "Finance": "Finance",
+      "Device": "Device",
+      "Map": "Map",
+      "User & Faces": "User",
+      "Game & Sports": "Game",
+      "Others": "Others"
+    }
+  },
+  "cimbar": {
+    "title": "Cimbar Offline Transfer",
+    "waiting": "Waiting to generate QR code...",
+    "selectAtLeastOne": "Please select at least one password",
+    "noSelection": "No selection",
+    "generateFailed": "Generation failed",
+    "generateSuccess": "QR code generated for {{count}} passwords",
+    "decodeSuccess": "✅ Decoding complete, file downloaded",
+    "decode": "Decode",
+    "sharePassword": "Share Password",
+    "selectRange": "Selection Range ({{count}}/{{total}})",
+    "selectItemsPlaceholder": "Select items...",
+    "encryptionNone": "None",
+    "encryptionFixed": "Fixed",
+    "encryptionAuto": "Random",
+    "secureOfflineTransfer": "Secure Offline Transfer",
+    "opticalStreamProtocol": "Optical Stream Protocol",
+    "waveformActive": "Waveform Transmission Active",
+    "scanningStream": "Scanning Stream",
+    "scanningStreamDesc": "Point at the animated QR code on another device",
+    "linkActive": "Link Active",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect",
+    "setGroup": "SET",
+    "clearGroup": "CLR",
+    "encryptionLabel": "Encryption",
+    "payloadLabel": "Payload",
+    "zoom": "Zoom",
+    "received": "Received",
+    "reset": "Reset",
+    "openCamera": "Open Camera",
+    "stop": "Stop",
+    "importFile": "File",
+    "loading": "Loading...",
+    "analyzing": "Analyzing (frame {{frame}})",
+    "importSuccess": "Import Success",
+    "cameraStarting": "Starting camera...",
+    "engineError": "Engine init failed",
+    "cameraError": "Access failed: {{error}}",
+    "videoPlayError": "Video playback failed",
+    "videoParsingFile": "Parsing video file...",
+    "search": "Search...",
+    "usageGuide": "Usage Guide",
+    "transferReady": "Transfer Ready ({{count}} items)",
+    "updatingStream": "Updating stream data...",
+    "generateError": "QR code generation failed",
+    "ready": "QR code ready",
+    "decodeError": "Decoding failed",
+    "tips": {
+      "title": "Usage Tips",
+      "item1": "Generate mode automatically encodes selected entries",
+      "item2": "Set an optional password to protect transfer data",
+      "item3": "Decoding requires real-time camera, screenshots won't work",
+      "item4": "Decrypt using the import feature or CLI tools"
+    }
+  },
+  "modals": {
+    "password": {
+      "importBackupTitle": "🔐 Enter Backup Password",
+      "createBackupTitle": "🔐 Create Backup Password",
+      "restoreBackupTitle": "🔐 Restore Backup Password",
+      "exportBackupTitle": "🔐 Set Export Password",
+      "defaultTitle": "🔐 Enter Password",
+      "importBackupMessage": "Please enter the password for the Ciphora backup file to continue importing",
+      "createBackupMessage": "Please set a password for the backup file",
+      "restoreBackupMessage": "Please enter the password for the backup file to continue restoring",
+      "exportBackupMessage": "Please set a password for the export file",
+      "defaultMessage": "Please enter password",
+      "placeholder": "Enter password"
+    },
+    "importExport": {
+      "importSubtitle": "Select file format to import",
+      "exportSubtitle": "Select file format to export",
+      "importPrompt": "Please select import format:",
+      "exportPrompt": "Please select export format:",
+      "selectFormatFirst": "Please select a format first",
+      "excelImportDesc": "Import data from .xlsx/.xls files",
+      "csvImportDesc": "Import data from .csv/.txt files",
+      "ciphoraImportDesc": "Restore from .ciphora backup files",
+      "excelExportDesc": "Export as .xlsx format",
+      "csvExportDesc": "Export as .csv format",
+      "ciphoraExportDesc": "Export as .ciphora backup format",
+      "templateDefaultName": "Ciphora_Import_Template",
+      "examples": {
+        "notes1": "Example Notes",
+        "desc1": "Example Description",
+        "notes2": "GitHub Account",
+        "desc2": "GitHub Account Password",
+        "notes3": "MFA Verification Code",
+        "desc3": "Two-Factor Authentication"
+      }
+    },
+    "importPreview": {
+      "title": "Import Preview",
+      "countEntries": "{{count}} entries total",
+      "conflictCount": "{{count}} conflicts",
+      "modeKeep": "Keep Existing",
+      "modeSmart": "Smart Update",
+      "modeLatest": "Use Imported",
+      "modeBoth": "Keep Both",
+      "keepExisting": "Keep Existing",
+      "useImported": "Use Imported",
+      "keepBoth": "Keep Both",
+      "confirmImport": "Confirm Import"
+    },
+    "backend": {
+      "encryption_failed": "Encryption failed",
+      "setup_success": "Master password setup successful",
+      "verification_failed": "Verification failed",
+      "master_password_not_set": "Master password not set",
+      "parse_groups_failed": "Failed to parse groups",
+      "serialize_groups_failed": "Failed to serialize groups",
+      "group_not_found": "Group not found",
+      "import_completed": "Import completed",
+      "serialization_failed": "Serialization failed",
+      "backup_password_incorrect_or_file_corrupted": "Incorrect backup password or corrupted file",
+      "legacy_backup_parse_failed": "Failed to parse legacy backup file",
+      "unsupported_backup_format": "Unsupported backup format",
+      "backup_parse_failed": "Failed to parse backup",
+      "restore_success": "Successfully restored {{count}} entries",
+      "entry_not_found": "Entry not found",
+      "no_passwords_available_to_share": "No passwords available to share",
+      "no_entries_selected": "No entries selected",
+      "no_vault_data_available": "No vault data available",
+      "not_authenticated": "Not authenticated",
+      "parse_settings_failed": "Failed to parse settings",
+      "serialize_settings_failed": "Failed to serialize settings",
+      "parse_autoLock_failed": "Failed to parse auto-lock settings",
+      "parse_passwordGenerator_failed": "Failed to parse password generator settings",
+      "parse_ui_settings_failed": "Failed to parse UI settings",
+      "parse_mfa_settings_failed": "Failed to parse MFA settings",
+      "parse_importExport_settings_failed": "Failed to parse import/export settings",
+      "unsupported_setting_item": "Unsupported setting item",
+      "decode_secret_failed": "Failed to decode secret"
+    },
+    "security": {
+      "title": "Security & Encryption",
+      "subtitle": "Ciphora Security Architecture",
+      "tabs": {
+        "overview": "Overview",
+        "encryption": "Encryption",
+        "architecture": "Architecture"
+      },
+      "overview": {
+        "title": "Zero-Trust Local Encryption",
+        "subtitle": "All data processed locally, never uploaded",
+        "desc": "Ciphora uses military-grade encryption algorithms. Your master password is never stored in plain text. Even if the source code is public, attackers cannot decrypt your data without the master password."
+      },
+      "features": {
+        "aes": {
+          "name": "AES-256-GCM",
+          "desc": "Authenticated encryption mode, ensuring both confidentiality and integrity"
+        },
+        "argon2": {
+          "name": "Argon2id KDF",
+          "desc": "GPU-bruteforce resistant, memory-hard key derivation function"
+        },
+        "deviceBinding": {
+          "name": "Device Binding",
+          "desc": "Unique device ID participates in key derivation to prevent cross-device attacks"
+        },
+        "totp": {
+          "name": "TOTP Two-Factor",
+          "desc": "Built-in TOTP generation and verification for secure logins"
+        }
+      },
+      "commitments": {
+        "title": "Security Commitments",
+        "item1": "Master password is never stored in plain text, only exists briefly in memory",
+        "item2": "Runs completely offline, all encryption/decryption is local",
+        "item3": "Each record uses a unique random Nonce for different ciphertexts",
+        "item4": "Open-source code, transparent algorithms, no security through obscurity"
+      },
+      "encryption": {
+        "title": "Encryption Flow",
+        "step1": {
+          "title": "Password Input",
+          "desc": "User enters master password, system gets unique device ID"
+        },
+        "step2": {
+          "title": "Argon2id Derivation",
+          "desc": "Derive 256-bit symmetric key with random salt via Argon2id"
+        },
+        "step3": {
+          "title": "AES-256-GCM Encryption",
+          "desc": "Generate random 96-bit Nonce, encrypt password data"
+        },
+        "step4": {
+          "title": "Base64 Persistence",
+          "desc": "Store ciphertext, Nonce, and salt encoded in local file"
+        },
+        "specs": {
+          "title": "Algorithm Specs",
+          "keyLength": "Key Length",
+          "tagLength": "Tag Length",
+          "securityProps": "Security Properties",
+          "aead": "AEAD Authenticated Encryption",
+          "memoryUsage": "Memory Usage",
+          "iterations": "Iterations",
+          "salt": "Salt",
+          "output": "Output",
+          "keyOutput": "32-byte symmetric key"
+        }
+      },
+      "attacks": {
+        "title": "Attack Resistance",
+        "bruteforce": "Bruteforce",
+        "bruteforceProt": "Argon2id high memory cost",
+        "dictionary": "Dictionary Attack",
+        "dictionaryProt": "Random salt + Device ID binding",
+        "tamper": "Data Tampering",
+        "tamperProt": "GCM authentication tag detection",
+        "rainbow": "Rainbow Tables",
+        "rainbowProt": "Unique salt for each derivation"
+      },
+      "architecture": {
+        "title": "Technology Stack",
+        "frontend": "Frontend Layer · React + Vite",
+        "backend": "Backend Layer · Rust (Tauri)",
+        "storage": "Storage Layer · Local Encrypted Files",
+        "storageDesc": "Local Encrypted Files",
+        "auth": "Auth",
+        "pwdMgr": "Password Mgr",
+        "mfa": "MFA Verification",
+        "importExport": "Import/Export",
+        "authService": "Auth Service",
+        "cryptoEngine": "Crypto Engine",
+        "pwdStorage": "Password Storage",
+        "mfaService": "MFA Service",
+        "groupMgr": "Group Mgr",
+        "backupRestore": "Backup/Restore",
+        "vaultFile": "Encrypted Vault",
+        "settingsFile": "App Settings",
+        "groupsFile": "Group Data"
+      },
+      "principles": {
+        "title": "Design Principles",
+        "local": {
+          "title": "Fully Local",
+          "desc": "No dependency on network services, everything on device"
+        },
+        "rust": {
+          "title": "Rust Memory Safety",
+          "desc": "Backend in Rust eliminates memory vulnerabilities at compile time"
+        },
+        "leastPriv": {
+          "title": "Least Privilege",
+          "desc": "Tauri strictly limits frontend access to system resources"
+        },
+        "defense": {
+          "title": "Defense in Depth",
+          "desc": "Multi-layer security: Encryption + Auth + Device Binding"
+        }
+      }
+    }
+  },
+  "login": {
+    "welcomeBack": "Welcome Back",
+    "enterPassword": "Please enter master password",
+    "loginFailed": "Login failed",
+    "loginError": "An error occurred during login",
+    "verifying": "Verifying...",
+    "unlockVault": "Unlock Vault",
+    "forgotTitle": "Forgot Master Password",
+    "forgotMessage": "If you forgot your master password, you can reset all data and start over",
+    "forgotDetail": "This operation will:\n• Permanently delete all password data\n• Clear all settings\n• Reset application state\n\nThis action cannot be undone!\n\nPlease confirm you want to proceed.",
+    "resetConfirmTitle": "Final Confirmation",
+    "resetConfirmMessage": "Are you sure you want to reset all data?",
+    "resetConfirmDetail": "This will clear all passwords and settings, and cannot be recovered!\n\nClick \"Confirm Reset\" to proceed, or \"Cancel\" to abort.",
+    "confirmReset": "Confirm Reset",
+    "resetSuccessTitle": "Reset Complete",
+    "resetSuccessMessage": "All data has been reset!",
+    "resetSuccessDetail": "The application will restart, please set a new master password.",
+    "resetFailedTitle": "Reset Failed",
+    "resetFailedMessage": "Failed to reset data",
+    "resetError": "An error occurred during data reset",
+    "havingTrouble": "Having trouble?",
+    "forgotPasswordHint": "Forgot master password?"
+  },
+  "header": {
+    "vault": "Vault",
+    "dashboard": "Dashboard",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "addPassword": {
+      "name": "Add New Password",
+      "description": "Quickly create entries, supporting Website, MFA, JSON, String, etc.",
+      "cta": "Add Now"
+    },
+    "passwordCount": {
+      "name": "Password Count",
+      "description": "How many passwords have you saved?"
+    },
+    "security": {
+      "name": "Security Encryption",
+      "description": "Argon2id Key Derivation + AES-256-GCM offline encryption, locally stored.",
+      "cta": "How it works"
+    },
+    "exportBackup": {
+      "name": "Export Backup",
+      "description": "Export encrypted backups timely to avoid data loss.",
+      "cta": "Create Backup"
+    },
+    "importData": {
+      "name": "Import Data",
+      "description": "Support CSV/Excel/Ciphora backup import.",
+      "cta": "Import Data"
+    },
+    "cimbar": {
+      "name": "QR Code Transfer",
+      "description": "Generate high-speed transfer QR code, or switch to receiving mode",
+      "cta": "Start Transfer"
+    }
+  },
+  "setup": {
+    "title": "Set Master Password",
+    "masterPassword": "Master Password",
+    "masterPasswordPlaceholder": "Enter your master password",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Re-enter your master password",
+    "passwordMismatch": "Passwords do not match",
+    "passwordEmpty": "Password cannot be empty",
+    "initializing": "Initializing...",
+    "startUsing": "Get Started",
+    "initFailed": "Initialization failed",
+    "initError": "An error occurred during initialization",
+    "tagline": "Offline Storage • End-to-End Encryption • Edge Security • Privacy First"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "languageDescription": "Select your preferred application language",
+    "theme": "Theme",
+    "security": "Security",
+    "categoryTitle": "Categories",
+    "sections": {
+      "general": "General",
+      "password": "Reset Master Password",
+      "donation": "Project Details & Support",
+      "danger": "Danger Zone"
+    },
+    "general": {
+      "hideSensitiveButtons": {
+        "name": "Hide Sensitive Buttons",
+        "description": "Hide dangerous operation buttons like delete and clear"
+      },
+      "showPasswordStrength": {
+        "name": "Show Password Strength",
+        "description": "Show strength indicator during password entry"
+      },
+      "autoLock": {
+        "name": "Auto Lock",
+        "description": "Automatically lock application after a period of inactivity"
+      },
+      "autoLockTimeout": {
+        "name": "Lock Timeout",
+        "description": "Set minutes of inactivity before auto locking",
+        "1min": "1 Minute",
+        "5min": "5 Minutes",
+        "15min": "15 Minutes",
+        "30min": "30 Minutes",
+        "1hour": "1 Hour",
+        "never": "Never"
+      },
+      "defaultLength": {
+        "name": "Default Password Length",
+        "description": "Set the default length for generated passwords"
+      },
+      "generatorOptions": {
+        "title": "Password Generator Options",
+        "uppercase": "Include Uppercase (A-Z)",
+        "lowercase": "Include Lowercase (a-z)",
+        "numbers": "Include Numbers (0-9)",
+        "symbols": "Include Symbols (!@#$%^&*)",
+        "similar": "Exclude Similar Characters (0O1lI)",
+        "custom": "Custom Charset",
+        "customPlaceholder": "Leave empty for default"
+      },
+      "cardOrder": {
+        "name": "Card Sorting Mode",
+        "description": "Set the default display order for cards",
+        "usage": "Usage Rate (Clicks)",
+        "createdAt": "Created Time",
+        "updatedAt": "Updated Time",
+        "username": "Username"
+      },
+      "pagination": {
+        "enable": {
+          "name": "Enable Pagination",
+          "description": "Show entries in pages when there are many"
+        },
+        "pageSize": {
+          "name": "Items per Page",
+          "description": "Set the number of entries per page"
+        }
+      }
+    },
+    "password": {
+      "current": "Current Password",
+      "currentPlaceholder": "Enter current password",
+      "new": "New Password",
+      "newPlaceholder": "Enter new password",
+      "confirm": "Confirm New Password",
+      "confirmPlaceholder": "Re-enter new password",
+      "resetButton": "Reset Password",
+      "mismatch": "New password and confirmation do not match",
+      "empty": "New password cannot be empty",
+      "success": "Master password reset successfully",
+      "failed": "Failed to reset password",
+      "error": "An error occurred during password reset"
+    },
+    "donation": {
+      "title": "Project Details & Support",
+      "description": "A secure, open-source password manager supporting multiple data types and encrypted backups",
+      "support": "Support Project",
+      "projectAddress": "Repository",
+      "sponsor": "Sponsor",
+      "flower": "🌸Flower ¥1",
+      "lemonade": "🍋Lemonade ¥5",
+      "milktea": "🧋Milk Tea ¥12",
+      "lunch": "🍽️Lunch ¥25",
+      "custom": "Custom ¥?",
+      "wechat": "WeChat Pay",
+      "alipay": "AliPay",
+      "footer": "If this helps you, welcome to support the development"
+    },
+    "danger": {
+      "title": "Danger Zone",
+      "description": "The following operations are destructive, please proceed with caution",
+      "clearPasswords": {
+        "name": "Clear All Passwords",
+        "description": "This will permanently delete all password data and cannot be recovered!",
+        "success": "All passwords cleared"
+      },
+      "resetApp": {
+        "name": "Reset App",
+        "description": "Clear all settings and restore to initial state",
+        "confirm": "Are you sure you want to reset the app? This will clear all settings."
+      },
+      "resetSettings": {
+        "name": "Reset Settings",
+        "description": "Restore all app settings to default values. Your passwords and groups will not be affected.",
+        "confirm": "Are you sure you want to reset all settings to defaults? This action cannot be undone.",
+        "success": "Settings have been reset successfully"
+      },
+      "resetAllData": {
+        "name": "Reset All Data",
+        "hint": "Extremely Dangerous",
+        "description": "Clear all password data and settings, resetting the app to its initial state. This action cannot be undone!"
+      },
+      "confirmModal": {
+        "title": "⚠️ Danger Operation Warning",
+        "message": "This operation will permanently delete all password data and cannot be recovered! If you are sure you want to proceed, please enter 'DELETE ALL' below to confirm:",
+        "placeholder": "Please enter DELETE ALL",
+        "confirmButton": "Confirm Delete",
+        "textMismatch": "Confirmation text mismatch, operation cancelled"
+      }
+    }
+  }
+}

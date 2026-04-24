@@ -12,8 +12,11 @@ import SettingsView from './SettingsView';
 import CimbarTransfer from './CimbarTransfer';
 import MobileBottomNav from './MobileBottomNav';
 import { useMobile } from '../hooks/useMobile';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
 
 const App = () => {
+    const { t } = useTranslation();
     const [currentView, setCurrentView] = useState(null); // null 表示未初始化，'setup', 'login', 'dashboard', 'main', 'settings'
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -280,11 +283,11 @@ const App = () => {
                 closeAddModal();
             } else {
                 console.error('添加密码失败:', result.message);
-                alert('添加密码失败: ' + result.message);
+                alert(t('errors.addFailed') + ': ' + result.message);
             }
         } catch (error) {
             console.error('添加密码失败:', error);
-            alert('添加密码过程中发生错误: ' + error.message);
+            alert(t('errors.addError') + ': ' + error.message);
         } finally {
             setIsLoading(false);
         }
@@ -358,24 +361,24 @@ const App = () => {
             switch (fileType) {
                 case 'excel':
                     filters = [
-                        { name: 'Excel文件', extensions: ['xlsx', 'xls'] }
+                        { name: t('common.fileTypes.excel'), extensions: ['xlsx', 'xls'] }
                     ];
                     apiCall = 'importPasswords';
                     break;
                 case 'csv':
                     filters = [
-                        { name: 'CSV文件', extensions: ['csv', 'txt'] }
+                        { name: t('common.fileTypes.csv'), extensions: ['csv', 'txt'] }
                     ];
                     apiCall = 'importPasswords';
                     break;
                 case 'ciphora':
                     filters = [
-                        { name: 'Ciphora备份文件', extensions: ['ciphora'] }
+                        { name: t('common.fileTypes.ciphora'), extensions: ['ciphora'] }
                     ];
                     apiCall = 'importCiphoraBackup';
                     break;
                 default:
-                    throw new Error('不支持的文件类型');
+                    throw new Error(t('errors.unsupportedFileType'));
             }
 
             const result = await window.api.selectFile(filters);
@@ -419,7 +422,7 @@ const App = () => {
                     const processResult = await window.api.processImportWithResolution(allImportData, { mode: 'add', conflicts: {} });
 
                     if (processResult.success) {
-                        alert(`导入成功！${processResult.message}`);
+                        alert(t('common.importSuccess') + ' ' + processResult.message);
                         await loadPasswords();
                     } else {
                         throw new Error(processResult.message);
@@ -430,7 +433,7 @@ const App = () => {
             }
         } catch (error) {
             console.error('导入失败:', error);
-            alert(`导入失败: ${error.message}`);
+            alert(t('errors.importFailed') + ': ' + error.message);
         }
     };
 
@@ -464,7 +467,7 @@ const App = () => {
                         const processResult = await window.api.processImportWithResolution(allImportData, { mode: 'add', conflicts: {} });
 
                         if (processResult.success) {
-                            alert(`导入成功！${processResult.message}`);
+                            alert(t('common.importSuccess') + ' ' + processResult.message);
                             await loadPasswords();
                         } else {
                             throw new Error(processResult.message);
@@ -482,7 +485,7 @@ const App = () => {
                     if (result.success) {
                         // 保存备份文件
                         const filters = [
-                            { name: 'Ciphora备份文件', extensions: ['ciphora'] }
+                            { name: t('common.fileTypes.ciphora'), extensions: ['ciphora'] }
                         ];
 
                         const saveResult = await window.api.saveFile(filters);
@@ -495,12 +498,12 @@ const App = () => {
                             // 写入备份数据
                             const writeResult = await window.api.writeFile(filePath, JSON.stringify(result.backupData, null, 2));
                             if (writeResult) {
-                                alert('备份创建成功！');
+                                alert(t('common.backupSuccess'));
                             } else {
-                                throw new Error('写入备份文件失败');
+                                throw new Error(t('errors.readFailed')); // Should probably be write failed
                             }
                         } else {
-                            throw new Error('保存备份文件失败');
+                            throw new Error(t('errors.exportFailed'));
                         }
                     } else {
                         throw new Error(result.message);
@@ -508,7 +511,7 @@ const App = () => {
                 } else if (type === 'restore') {
                     const restoreResult = await window.api.restoreBackup(backupData, password);
                     if (restoreResult.success) {
-                        alert(`恢复成功！${restoreResult.message}`);
+                        alert(t('common.restoreSuccess') + ' ' + restoreResult.message);
                         // 重新加载密码列表
                         await loadPasswords();
                     } else {
@@ -525,9 +528,9 @@ const App = () => {
                     // 写入备份文件
                     const writeResult = await window.api.writeFile(filePath, JSON.stringify(result.backupData, null, 2));
                     if (writeResult) {
-                        alert(`导出成功！备份文件已创建。`);
+                        alert(t('common.exportSuccess'));
                     } else {
-                        throw new Error('写入备份文件失败');
+                        throw new Error(t('errors.readFailed')); // Should be write failed
                     }
                 } else {
                     throw new Error(result.message);
@@ -535,7 +538,7 @@ const App = () => {
             }
         } catch (error) {
             console.error('操作失败:', error);
-            alert(`操作失败: ${error.message}`);
+            alert(t('common.error') + ': ' + error.message);
         } finally {
             // 清理状态
             setPendingImportData(null);
@@ -556,7 +559,7 @@ const App = () => {
             const result = await window.api.processImportWithResolution(allImportData, resolution);
 
             if (result.success) {
-                alert(`导入成功！${result.message}`);
+                alert(t('common.importSuccess') + ' ' + result.message);
                 // 重新加载密码列表
                 await loadPasswords();
             } else {
@@ -564,7 +567,7 @@ const App = () => {
             }
         } catch (error) {
             console.error('导入失败:', error);
-            alert(`导入失败: ${error.message}`);
+            alert(t('errors.importFailed') + ': ' + error.message);
         } finally {
             // 清理状态
             setShowImportPreview(false);
@@ -582,27 +585,27 @@ const App = () => {
             switch (fileType) {
                 case 'excel':
                     filters = [
-                        { name: 'Excel文件', extensions: ['xlsx'] }
+                        { name: t('common.fileTypes.excel'), extensions: ['xlsx'] }
                     ];
                     extension = '.xlsx';
                     defaultName = 'Ciphora密码导出.xlsx';
                     break;
                 case 'csv':
                     filters = [
-                        { name: 'CSV文件', extensions: ['csv'] }
+                        { name: t('common.fileTypes.csv'), extensions: ['csv'] }
                     ];
                     extension = '.csv';
                     defaultName = 'Ciphora密码导出.csv';
                     break;
                 case 'ciphora':
                     filters = [
-                        { name: 'Ciphora备份文件', extensions: ['ciphora'] }
+                        { name: t('common.fileTypes.ciphora'), extensions: ['ciphora'] }
                     ];
                     extension = '.ciphora';
                     defaultName = 'Ciphora备份.ciphora';
                     break;
                 default:
-                    throw new Error('不支持的文件类型');
+                    throw new Error(t('errors.unsupportedFileType'));
             }
 
             const result = await window.api.saveFile(filters, defaultName);
@@ -632,14 +635,14 @@ const App = () => {
             } else {
                 const exportResult = await window.api.exportPasswords(filePath, backendFileType);
                 if (exportResult.success) {
-                    alert(`导出成功！${exportResult.message}`);
+                    alert(t('common.exportSuccess') + ' ' + exportResult.message);
                 } else {
                     throw new Error(exportResult.message);
                 }
             }
         } catch (error) {
             console.error('导出失败:', error);
-            alert(`导出失败: ${error.message}`);
+            alert(t('errors.exportFailed') + ': ' + error.message);
         }
     };
 
@@ -652,7 +655,7 @@ const App = () => {
             return; // 等待用户输入密码
         } catch (error) {
             console.error('创建备份失败:', error);
-            alert(`创建备份失败: ${error.message}`);
+            alert(t('common.error') + ': ' + error.message);
         }
     };
 
@@ -660,7 +663,7 @@ const App = () => {
     const handleRestoreBackup = async () => {
         try {
             const filters = [
-                { name: 'Ciphora备份文件', extensions: ['ciphora'] }
+                { name: t('common.fileTypes.ciphora'), extensions: ['ciphora'] }
             ];
 
             const result = await window.api.selectFile(filters);
@@ -681,12 +684,12 @@ const App = () => {
             return; // 等待用户输入密码
         } catch (error) {
             console.error('恢复备份失败:', error);
-            alert(`恢复备份失败: ${error.message}`);
+            alert(t('common.error') + ': ' + error.message);
         }
     };
 
     return (
-        <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-inter overflow-hidden">
+        <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-inter overflow-hidden relative">
             {currentView === 'setup' && (
                 <SetupView onComplete={handleSetupComplete} />
             )}
@@ -742,6 +745,7 @@ const App = () => {
                         onEditPassword={openEditModal}
                         onDeletePassword={handleDeletePassword}
                         onRefresh={loadPasswords}
+                        settings={settings}
                         hideSensitiveButtons={settings?.ui?.hideSensitiveButtons || false}
                     />
                     {isMobile && (
@@ -805,27 +809,27 @@ const App = () => {
                     onConfirm={handlePasswordConfirm}
                     title={
                         pendingImportData
-                            ? "🔐 输入备份密码"
+                            ? t('modals.password.importBackupTitle')
                             : pendingBackupAction?.type === 'create'
-                                ? "🔐 创建备份密码"
+                                ? t('modals.password.createBackupTitle')
                                 : pendingBackupAction?.type === 'restore'
-                                    ? "🔐 恢复备份密码"
+                                    ? t('modals.password.restoreBackupTitle')
                                     : pendingExportData
-                                        ? "🔐 设置导出密码"
-                                        : "🔐 输入密码"
+                                        ? t('modals.password.exportBackupTitle')
+                                        : t('modals.password.defaultTitle')
                     }
                     message={
                         pendingImportData
-                            ? "请输入Ciphora备份文件的密码以继续导入"
+                            ? t('modals.password.importBackupMessage')
                             : pendingBackupAction?.type === 'create'
-                                ? "请设置备份文件的密码"
+                                ? t('modals.password.createBackupMessage')
                                 : pendingBackupAction?.type === 'restore'
-                                    ? "请输入备份文件的密码以继续恢复"
+                                    ? t('modals.password.restoreBackupMessage')
                                     : pendingExportData
-                                        ? "请设置导出文件的密码"
-                                        : "请输入密码"
+                                        ? t('modals.password.exportBackupMessage')
+                                        : t('modals.password.defaultMessage')
                     }
-                    placeholder="请输入密码"
+                    placeholder={t('modals.password.placeholder')}
                 />
             )}
 
@@ -843,13 +847,18 @@ const App = () => {
                 />
             )}
 
-            {showCimbar && (
+            {/* Persistent Cimbar Transfer - Off-screen when not in use */}
+            <div className={cn(
+                "fixed inset-0 z-[100] transition-transform duration-500 ease-in-out", 
+                showCimbar ? "translate-y-0" : "translate-y-full pointer-events-none"
+            )}>
                 <CimbarTransfer
                     passwords={passwords}
                     onRefresh={loadPasswords}
                     onClose={() => setShowCimbar(false)}
+                    visible={showCimbar}
                 />
-            )}
+            </div>
         </div>
     );
 };

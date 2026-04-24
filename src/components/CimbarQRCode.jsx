@@ -1,345 +1,301 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
+import { loadCimbarEngine, subscribeToCimbarRender } from '@/lib/cimbar-engine';
+import { Video, StopCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const CIMBAR_JS_FILE = 'cimbar.js';
-const CIMBAR_WASM_FILE = 'cimbar.wasm';
-
-// 模块级：WASM 只初始化一次
-let _moduleInitPromise = null;
-
-// 清理上一次热更新/版本遗留的孤立 canvas
-function cleanupOrphanCanvases() {
-    document.querySelectorAll('body > canvas').forEach(c => c.remove());
-}
-
-// WebGL 检测（用独立 canvas，不污染渲染 canvas）
-function isWebGLOkay() {
-    const canvas = document.createElement('canvas');
-    const configs = [
-        { version: 2, type: 'webgl2' },
-        { version: 1, type: 'webgl' },
-        { version: 1, type: 'experimental-webgl' },
-    ];
-    for (const cfg of configs) {
-        const gl = canvas.getContext(cfg.type, { antialias: false, alpha: false });
-        if (!gl) continue;
-        const exts = gl.getSupportedExtensions() || [];
-        const required = ['OES_texture_float', 'OES_texture_half_float', 'WEBGL_lose_context'];
-        const missing = required.filter(x => !exts.includes(x));
-        const isWebGL2 = cfg.version === 2;
-        const criticalMissing = isWebGL2
-            ? missing.filter(x => x !== 'OES_texture_float' && x !== 'OES_texture_half_float')
-            : missing;
-        if (criticalMissing.length > 0 && !isWebGL2) continue;
-        return { ok: true };
-    }
-    return { ok: false };
-}
-
-export default function CimbarQRCode({ data, filename = 'data.bin', className = '', style, onError, onReady }) {
+/**
+ * CIMBAR QR COMPONENT (Resilient View)
+ */
+export default function CimbarQRCode({ data, filename = 'data.bin', className = '', style, onError, onReady, visible = true }) {
     const [status, setStatus] = useState('initializing');
-    const [message, setMessage] = useState('正在初始化...');
+    const [message, setMessage] = useState('连接引擎...');
     const [progress, setProgress] = useState(0);
+    const [isRecording, setIsRecording] = useState(false);
 
-    const canvasRef = useRef(null);
+    const localCanvasRef = useRef(null);
     const isEncodingRef = useRef(false);
-    const importFileRef = useRef(null);
     const lastEncodedDataRef = useRef(null);
+    const isMountedRef = useRef(true);
+    const mediaRecorderRef = useRef(null);
+    const chunksRef = useRef([]);
+    const currentTaskRef = useRef(0);
+    const engineReadyRef = useRef(false);
 
-    const _interval = useRef(66);
-    const _pause = useRef(0);
-    const _compressBuff = useRef(undefined);
-    const nextFrameTimer = useRef(null);
-
-    const nextFrame = useCallback(() => {
-        if (!window.Module) return;
-        if (_pause.current > 0) _pause.current -= 1;
-        const start = performance.now();
-        if (_pause.current === 0) {
-            window.Module._cimbare_render();
-            window.Module._cimbare_next_frame();
+    // Optimized copy from background buffer
+    const onRenderTick = useCallback((sharedCanvas) => {
+        if (!isMountedRef.current || !localCanvasRef.current || !sharedCanvas) return;
+        const localCanvas = localCanvasRef.current;
+        const ctx = localCanvas.getContext('2d', { alpha: false });
+        if (ctx) {
+            // Sync canvas pixel size to shared buffer
+            if (localCanvas.width !== sharedCanvas.width || localCanvas.height !== sharedCanvas.height) {
+                localCanvas.width = sharedCanvas.width;
+                localCanvas.height = sharedCanvas.height;
+            }
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(sharedCanvas, 0, 0);
         }
-        const elapsed = performance.now() - start;
-        const next = _interval.current > elapsed ? _interval.current - elapsed : 0;
-        nextFrameTimer.current = setTimeout(nextFrame, next);
-    }, []);
-
-    const setMode = useCallback((mode_str) => {
-        if (!window.Module) return;
-        let modeVal = 68;
-        if (mode_str === '4C') modeVal = 4;
-        else if (mode_str === 'Bm') modeVal = 67;
-        window.Module._cimbare_configure(modeVal, -1);
     }, []);
 
     const copyToWasmHeap = useCallback((abuff) => {
-        if (!window.Module) return null;
-        const ptr = window.Module._malloc(abuff.length);
-        const view = new Uint8Array(window.Module.HEAPU8.buffer, ptr, abuff.length);
-        view.set(abuff);
-        return view;
+        if (!window.Module || !window.Module._malloc) return null;
+        try {
+            const ptr = window.Module._malloc(abuff.length);
+            const view = new Uint8Array(window.Module.HEAPU8.buffer, ptr, abuff.length);
+            view.set(abuff);
+            return view;
+        } catch (e) { return null; }
     }, []);
 
-    const encode_init = useCallback((fname) => {
-        if (!window.Module) return;
-        console.log('encoding ' + fname);
-        const wasmFn = copyToWasmHeap(new TextEncoder().encode(fname));
-        if (!wasmFn) return;
+    const importFile = useCallback((file, taskId) => {
+        if (!window.Module || !window.Module._cimbare_encode_bufsize) return;
+
         try {
-            const res = window.Module._cimbare_init_encode(wasmFn.byteOffset, wasmFn.length, -1);
-            console.log('init_encode returned ' + res);
-        } finally {
-            window.Module._free(wasmFn.byteOffset);
+            const chunkSize = window.Module._cimbare_encode_bufsize();
+            const reader = new FileReader();
+
+            // Init encode session
+            const fnameEncoded = new TextEncoder().encode(file.name);
+            const wasmFn = copyToWasmHeap(fnameEncoded);
+            if (wasmFn) {
+                window.Module._cimbare_init_encode(wasmFn.byteOffset, wasmFn.length, -1);
+                window.Module._free(wasmFn.byteOffset);
+            }
+
+            const ptr = window.Module._malloc(chunkSize);
+            const heapBuffer = new Uint8Array(window.Module.HEAPU8.buffer, ptr, chunkSize);
+
+            let offset = 0;
+
+            reader.onerror = () => {
+                if (taskId !== currentTaskRef.current) return;
+                isEncodingRef.current = false;
+                setStatus('error');
+                setMessage('读取失败');
+            };
+
+            reader.onload = function (event) {
+                if (!isMountedRef.current || taskId !== currentTaskRef.current) return;
+
+                const datalen = event.target.result.byteLength;
+                try {
+                    if (datalen > 0) {
+                        heapBuffer.set(new Uint8Array(event.target.result));
+                        window.Module._cimbare_encode(heapBuffer.byteOffset, datalen);
+                        offset += chunkSize;
+                        readNext();
+                    } else {
+                        // EOF
+                        window.Module._cimbare_encode(heapBuffer.byteOffset, 0);
+                        window.Module._free(ptr);
+                        isEncodingRef.current = false;
+                        setStatus('ready');
+                        setMessage('就绪');
+                        setProgress(100);
+                    }
+                } catch (e) {
+                    isEncodingRef.current = false;
+                    setStatus('error');
+                    setMessage('编码崩溃');
+                }
+            };
+
+            function readNext() {
+                if (!isMountedRef.current || taskId !== currentTaskRef.current) return;
+                const slice = file.slice(offset, offset + chunkSize);
+                reader.readAsArrayBuffer(slice);
+                setProgress(Math.min(100, Math.round((offset / file.size) * 100)));
+            }
+
+            readNext();
+        } catch (err) {
+            isEncodingRef.current = false;
+            setStatus('error');
+            setMessage('准备失败');
         }
     }, [copyToWasmHeap]);
 
-    const encode_bytes = useCallback((wasmData) => {
-        if (!window.Module) return;
-        const res = window.Module._cimbare_encode(wasmData.byteOffset, wasmData.length);
-        console.log('encode returned ' + res);
-    }, []);
+    // Start encoding immediately - no status dependency to avoid re-trigger loops
+    const startEncode = useCallback((currentData, currentFilename) => {
+        // Accept either engineReadyRef OR window.Module already available (singleton already loaded)
+        const engineReady = engineReadyRef.current || !!(window.Module && window.Module._cimbare_encode_bufsize);
+        if (!currentData || !engineReady || isEncodingRef.current) return;
+        if (lastEncodedDataRef.current === currentData) return;
 
-    const importFile = useCallback((file) => {
-        if (!window.Module) return;
-        const chunkSize = window.Module._cimbare_encode_bufsize();
+        // Sync engineReadyRef in case it was missed
+        if (!engineReadyRef.current) engineReadyRef.current = true;
 
-        if (_compressBuff.current !== undefined) {
-            window.Module._free(_compressBuff.current.byteOffset);
-            _compressBuff.current = undefined;
-        }
-        const ptr = window.Module._malloc(chunkSize);
-        _compressBuff.current = new Uint8Array(window.Module.HEAPU8.buffer, ptr, chunkSize);
+        try {
+            const taskId = Date.now();
+            currentTaskRef.current = taskId;
+            isEncodingRef.current = true;
+            lastEncodedDataRef.current = currentData;
 
-        let offset = 0;
-        const reader = new FileReader();
-        encode_init(file.name);
+            setStatus('encoding');
+            setMessage('正在生成...');
+            setProgress(0);
 
-        reader.onload = function (event) {
-            const datalen = event.target.result.byteLength;
-            if (datalen > 0) {
-                const uint8View = new Uint8Array(event.target.result);
-                _compressBuff.current.set(uint8View);
-                const buffView = new Uint8Array(window.Module.HEAPU8.buffer, _compressBuff.current.byteOffset, datalen);
-                encode_bytes(buffView);
-                offset += chunkSize;
-                readNext();
-            } else {
-                console.log('Finished reading file.');
-                const nullBuff = new Uint8Array(window.Module.HEAPU8.buffer, _compressBuff.current.byteOffset, 0);
-                encode_bytes(nullBuff);
-                isEncodingRef.current = false;
-                setStatus('rendering');
-                setMessage('正在渲染...');
-                setProgress(100);
-            }
-        };
-
-        function readNext() {
-            const slice = file.slice(offset, offset + chunkSize);
-            reader.readAsArrayBuffer(slice);
-            setProgress(Math.min(100, Math.round((offset / file.size) * 100)));
-        }
-
-        readNext();
-    }, [encode_init, encode_bytes]);
-
-    useEffect(() => {
-        importFileRef.current = importFile;
-    }, [importFile]);
-
-    const loadCimbarWasm = useCallback(() => {
-        if (typeof window === 'undefined') return Promise.reject(new Error('不在浏览器环境'));
-
-        const canvas = canvasRef.current;
-        if (!canvas) {
-            return Promise.reject(new Error('Canvas 未就绪'));
-        }
-
-        // WASM 已初始化，重新绑定当前组件的 canvas
-        if (_moduleInitPromise && window.Module && window.Module._cimbare_init_encode) {
-            return _moduleInitPromise.then(() => {
-                // 重新绑定 canvas（可能是热更新后的新 canvas）
-                window.Module.canvas = canvas;
-
-                // 重新设置尺寸
-                const aspectRatio = window.Module._cimbare_get_aspect_ratio();
-                const baseSize = 488;
-                let width, height;
-                if (aspectRatio > 1) {
-                    width = Math.round(baseSize * aspectRatio);
-                    height = baseSize;
-                } else {
-                    width = baseSize;
-                    height = Math.round(baseSize / aspectRatio);
-                }
-                canvas.width = width;
-                canvas.height = height;
-
-                console.log('🔄 重新绑定 canvas:', width, 'x', height);
-
-                setMode('B');
-                setStatus('ready');
-                setMessage('引擎已就绪');
-                onReady?.();
-                if (!nextFrameTimer.current) nextFrame();
-            });
-        }
-
-        if (_moduleInitPromise) return _moduleInitPromise;
-
-        if (!isWebGLOkay().ok) {
-            const error = 'WebGL 不支持';
-            setStatus('error');
-            setMessage(error);
-            onError?.(new Error(error));
-            return Promise.reject(new Error(error));
-        }
-
-        _moduleInitPromise = new Promise((resolve, reject) => {
-            const base = '/wasm/';
-
-            if (!window.Module) window.Module = {};
-            window.Module.canvas = canvas;
-            window.Module.locateFile = (path) => {
-                if (path.endsWith('.wasm')) return base + CIMBAR_WASM_FILE;
-                return base + path;
-            };
-
-            window.Module.onRuntimeInitialized = () => {
-                if (window.Module._cimbare_init_encode && window.Module._cimbare_encode) {
-                    setMode('B');
-
-                    const aspectRatio = window.Module._cimbare_get_aspect_ratio();
-                    const baseSize = 488;
-                    let width, height;
-                    if (aspectRatio > 1) {
-                        width = Math.round(baseSize * aspectRatio);
-                        height = baseSize;
-                    } else {
-                        width = baseSize;
-                        height = Math.round(baseSize / aspectRatio);
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-
-                    console.log('✅ WASM 初始化，canvas:', width, 'x', height);
-                    console.log('GL contexts:', window.Module?.GL?.contexts);
-
+            // Deadman switch: force unlock if encoding takes too long (>5s)
+            setTimeout(() => {
+                if (currentTaskRef.current === taskId && isEncodingRef.current) {
+                    console.warn('Encoding task timed out, force unlocking...');
+                    isEncodingRef.current = false;
                     setStatus('ready');
-                    setMessage('引擎已就绪');
-                    onReady?.();
-                    nextFrame();
-                    resolve();
-                } else {
-                    const error = 'Cimbar 函数未正确导出';
-                    setStatus('error');
-                    setMessage(error);
-                    onError?.(new Error(error));
-                    _moduleInitPromise = null;
-                    reject(new Error(error));
                 }
-            };
+            }, 5000);
 
-            const script = document.createElement('script');
-            script.src = base + CIMBAR_JS_FILE;
-            script.async = true;
-            script.onload = () => console.log('✅ Cimbar JS 加载完成');
-            script.onerror = () => {
-                const error = '无法加载 Cimbar JS';
+            const dataArray = currentData instanceof ArrayBuffer ? new Uint8Array(currentData) : currentData;
+            importFile(new File([new Blob([dataArray])], currentFilename), taskId);
+        } catch (error) {
+            isEncodingRef.current = false;
+            setStatus('error');
+            setMessage('生成失败');
+            onError?.(error);
+        }
+    }, [importFile, onError]);
+
+    const init = useCallback((retry = false) => {
+        // If engine singleton already loaded AND WebGL ctx is alive, skip async wait
+        if (!retry && window.Module && window.Module._cimbare_encode_bufsize && window.Module.ctx) {
+            engineReadyRef.current = true;
+            setStatus('ready');
+            onReady?.();
+            return;
+        }
+        setStatus('initializing');
+        engineReadyRef.current = false;
+        loadCimbarEngine(retry).then(() => {
+            if (isMountedRef.current) {
+                engineReadyRef.current = true;
+                setStatus('ready');
+                onReady?.();
+            }
+        }).catch(err => {
+            if (isMountedRef.current) {
                 setStatus('error');
-                setMessage(error);
-                onError?.(new Error(error));
-                _moduleInitPromise = null;
-                reject(new Error(error));
-            };
-            document.head.appendChild(script);
+                setMessage(err.message || '引擎挂起');
+                onError?.(err);
+            }
         });
+    }, [onReady, onError]);
 
-        return _moduleInitPromise;
-    }, [setMode, nextFrame, onError, onReady]);
-
+    // Mount: load engine + always subscribe to render loop
     useEffect(() => {
-        // 清理上一次热更新遗留的孤立 canvas
-        cleanupOrphanCanvases();
-
-        loadCimbarWasm().catch(err => console.error('加载引擎失败:', err));
-
+        isMountedRef.current = true;
+        init();
+        const unsub = subscribeToCimbarRender(onRenderTick);
         return () => {
-            if (nextFrameTimer.current) {
-                clearTimeout(nextFrameTimer.current);
-                nextFrameTimer.current = null;
-            }
-            if (_compressBuff.current && window.Module) {
-                window.Module._free(_compressBuff.current.byteOffset);
-                _compressBuff.current = undefined;
-            }
+            isMountedRef.current = false;
+            unsub();
         };
-    }, [loadCimbarWasm]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // When visible becomes true, force re-encode so canvas repaints
+    const prevVisibleRef = useRef(false);
     useEffect(() => {
-        if (!data || !window.Module) return;
-        if (isEncodingRef.current) return;
-        if (lastEncodedDataRef.current === data) return;
+        const wasVisible = prevVisibleRef.current;
+        prevVisibleRef.current = visible;
+        if (visible && !wasVisible && dataRef.current) {
+            lastEncodedDataRef.current = null;
+            isEncodingRef.current = false;
+            setTimeout(() => {
+                if (isMountedRef.current && dataRef.current) {
+                    startEncode(dataRef.current, filenameRef.current);
+                }
+            }, 50);
+        }
+    }, [visible, startEncode]);
+
+    const dataRef = useRef(null);
+    const filenameRef = useRef(filename);
+    filenameRef.current = filename;
+
+    // Handle data changes - independent of status state to avoid loops
+    useEffect(() => {
+        if (!data) return;
+        dataRef.current = data;
 
         const timer = setTimeout(() => {
-            if (isEncodingRef.current) return;
-            if (lastEncodedDataRef.current === data) return;
-            try {
-                isEncodingRef.current = true;
-                lastEncodedDataRef.current = data;
-
-                const dataArray = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
-                const blob = new Blob([dataArray], { type: 'application/octet-stream' });
-                const file = new File([blob], filename, { type: 'application/octet-stream' });
-
-                setStatus('encoding');
-                setMessage('正在编码...');
-                setProgress(0);
-
-                importFileRef.current?.(file);
-            } catch (error) {
-                isEncodingRef.current = false;
-                lastEncodedDataRef.current = null;
-                console.error('编码失败:', error);
-                setStatus('error');
-                setMessage('编码失败: ' + error.message);
-                onError?.(error);
-            }
+            if (!isMountedRef.current) return;
+            startEncode(data, filenameRef.current);
         }, 100);
 
         return () => clearTimeout(timer);
-    }, [data, filename, onError]);
+    }, [data, startEncode]);
+
+    // When engine becomes ready, trigger encode if data is waiting
+    useEffect(() => {
+        if (status === 'ready' && dataRef.current && lastEncodedDataRef.current !== dataRef.current) {
+            startEncode(dataRef.current, filenameRef.current);
+        }
+    }, [status, startEncode]);
+
+    // Recording logic
+    const startRecording = () => {
+        if (!localCanvasRef.current) return;
+        chunksRef.current = [];
+        const stream = localCanvasRef.current.captureStream(20); 
+        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+        recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+        recorder.onstop = () => {
+            const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `cimbar-stream-${Date.now()}.webm`;
+            a.click();
+        };
+        recorder.start();
+        mediaRecorderRef.current = recorder;
+        setIsRecording(true);
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
+    };
 
     return (
-        <div className={`relative ${className}`} style={style}>
+        <div className={`relative flex items-center justify-center bg-black overflow-hidden shadow-inner ${className}`} style={style}>
             <canvas
-                ref={canvasRef}
-                width={488}
-                height={488}
+                ref={localCanvasRef}
                 style={{
                     imageRendering: 'pixelated',
                     display: 'block',
-                    maxWidth: '100%',
-                    maxHeight: '488px',
-                    width: 'auto',
-                    height: 'auto',
-                    borderRadius: '0.5rem',
-                    background: '#000',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    backgroundColor: '#000'
                 }}
             />
-            {(status === 'initializing' || status === 'encoding') && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg z-10">
-                    <div className="text-center">
-                        <div className="w-16 h-16 mx-auto mb-2 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
-                        <p className="text-sm text-gray-500">{message}</p>
-                        {status === 'encoding' && progress > 0 && (
-                            <p className="text-xs text-gray-400 mt-1">{progress}%</p>
-                        )}
-                    </div>
-                </div>
+            
+            {data && !isRecording && status === 'ready' && (
+                <button 
+                    onClick={startRecording}
+                    className="absolute top-4 left-4 p-2 bg-white/10 hover:bg-blue-600 text-white rounded-full transition-all opacity-0 group-hover:opacity-100 z-30 flex items-center gap-2 backdrop-blur-md border border-white/10"
+                    title="录制动画"
+                >
+                    <Video className="w-4 h-4" />
+                </button>
             )}
-            {status === 'error' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-red-50/80 rounded-lg z-10">
-                    <p className="text-sm text-red-600">{message}</p>
+
+            {isRecording && (
+                <button 
+                    onClick={stopRecording}
+                    className="absolute top-4 left-4 p-2 bg-red-600 text-white rounded-full transition-all z-30 flex items-center gap-2 animate-pulse shadow-lg shadow-red-900/50"
+                >
+                    <StopCircle className="w-4 h-4" />
+                    <span className="text-[10px] font-black pr-1 uppercase tracking-widest">Recording</span>
+                </button>
+            )}
+
+            {(status === 'initializing' || status === 'encoding') && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-10">
+                    <div className="text-center">
+                        <div className="w-8 h-8 mx-auto mb-3 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">{message}</p>
+                    </div>
                 </div>
             )}
         </div>

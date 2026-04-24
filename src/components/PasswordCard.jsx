@@ -19,6 +19,7 @@ import TOTPDisplay from './TOTPDisplay';
 import CopyButton from './CopyButton';
 import DataDisplayModal from './DataDisplayModal';
 import QRCode from 'qrcode';
+import { useTranslation } from 'react-i18next';
 
 // --- SVG Icons ---
 const CheckCircleIcon = (props) => (
@@ -68,6 +69,7 @@ const DashedLine = () => (
 
 
 const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiveButtons = false }) => {
+    const { t, i18n } = useTranslation();
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
     const [showQRCode, setShowQRCode] = useState(false);
@@ -103,11 +105,11 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
                     }
                 }, 100);
             } else {
-                alert('生成二维码失败，请重试');
+                alert(t('errors.qrCodeGenerateFailed'));
             }
         } catch (error) {
             console.error('生成二维码失败:', error);
-            alert('生成二维码失败，请重试');
+            alert(t('errors.qrCodeGenerateFailed'));
         }
     };
 
@@ -138,11 +140,11 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
 
     const getTypeBadge = (type) => {
         const badges = {
-            password: { text: '密码', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-            mfa: { text: 'MFA', color: 'bg-green-100 text-green-800 border-green-200' },
-            base64: { text: 'Base64', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-            string: { text: '字符串', color: 'bg-red-100 text-red-800 border-red-200' },
-            json: { text: 'JSON', color: 'bg-purple-100 text-purple-800 border-purple-200' }
+            password: { text: t('dataTypes.password'), color: 'bg-blue-100 text-blue-800 border-blue-200' },
+            mfa: { text: t('dataTypes.mfa'), color: 'bg-green-100 text-green-800 border-green-200' },
+            base64: { text: t('dataTypes.base64'), color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+            string: { text: t('dataTypes.string'), color: 'bg-red-100 text-red-800 border-red-200' },
+            json: { text: t('dataTypes.json'), color: 'bg-purple-100 text-purple-800 border-purple-200' }
         };
         return badges[type] || badges.string;
     };
@@ -162,9 +164,9 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
     const icon = getTypeIcon(password.type);
 
     const formatDate = (dateString) => {
-        if (!dateString) return '未知';
+        if (!dateString) return t('common.unknown');
         const date = new Date(dateString);
-        return new Intl.DateTimeFormat('zh-CN', {
+        return new Intl.DateTimeFormat(i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -174,286 +176,309 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
     };
 
     return (
-        <div className={`relative w-full max-w-lg bg-white text-gray-900 rounded-2xl shadow-lg font-sans animate-in fade-in-0 zoom-in-95 duration-500 ${className}`}>
+        <div className={`relative w-full max-w-lg bg-white text-gray-900 rounded-2xl shadow-lg font-sans animate-in fade-in-0 zoom-in-95 duration-500 flex flex-col h-full ${className}`}>
             {/* Card cut-out effect */}
             {/* <div className="absolute -left-4 top-1/2  w-8 h-8 rounded-full bg-[#F3F8FE]" />
             <div className="absolute -right-4 top-1/2  w-8 h-8 rounded-full bg-[#F3F8FE]" /> */}
 
             {/* Type watermark background */}
-            <div className="absolute top-16 right-6 z-0">
+            <div className="absolute top-16 right-6 z-0 pointer-events-none">
                 <div className={`text-2xl font-black opacity-10 ${badge.color.replace('bg-', 'text-').replace('text-', '').replace('border-', '')}`}>
                     {badge.text}
                 </div>
             </div>
 
-            {/* Header */}
-            <div className="pt-4 pb-6 px-6 text-gray-800 rounded-t-2xl relative">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gray-100 rounded-full">
-                            {icon}
+            {/* Main Content Wrapper - grows to fill space */}
+            <div className="flex-1 flex flex-col">
+                {/* Header */}
+                <div className="pt-4 pb-6 px-6 text-gray-800 rounded-t-2xl relative">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gray-100 rounded-full">
+                                {icon}
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-lg truncate">{password.website}</h3>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="font-semibold text-lg truncate">{password.website}</h3>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => onEdit(password)}
-                            className="flex items-center justify-center w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200 border border-gray-200"
-                            title="编辑"
-                        >
-                            <PencilIcon className="w-4 h-4" />
-                        </button>
-                        {!hideSensitiveButtons && (
+                        <div className="flex items-center gap-2">
                             <button
-                                onClick={() => onDelete(password)}
-                                className="flex items-center justify-center w-8 h-8 bg-red-50 hover:bg-red-100 rounded-lg transition-all duration-200 border border-red-200 text-red-700"
-                                title="删除"
+                                onClick={() => onEdit(password)}
+                                className="flex items-center justify-center w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200 border border-gray-200"
+                                title={t('common.edit')}
                             >
-                                <TrashIcon className="w-4 h-4" />
+                                <PencilIcon className="w-4 h-4" />
                             </button>
-                        )}
+                            {!hideSensitiveButtons && (
+                                <button
+                                    onClick={() => onDelete(password)}
+                                    className="flex items-center justify-center w-8 h-8 bg-red-50 hover:bg-red-100 rounded-lg transition-all duration-200 border border-red-200 text-red-700"
+                                    title={t('common.delete')}
+                                >
+                                    <TrashIcon className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
                     </div>
+                </div>
+
+                {/* Content */}
+                <div className="px-6 pb-6 space-y-4 flex-1">
+                    <DashedLine />
+
+                    {/* URL section - only show if url exists and showUrl is true */}
+                    {password.url && password.showUrl && (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <GlobeAltIcon className="w-4 h-4" />
+                                <span>{t('fields.url')}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl text-sm border border-gray-200 truncate">
+                                    {password.url}
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        const fullUrl = password.url + (password.urlSuffix || '');
+                                        if (window.api && window.api.openUrl) {
+                                            await window.api.openUrl(fullUrl);
+                                        } else {
+                                            window.open(fullUrl, '_blank');
+                                        }
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl text-sm font-medium transition-colors whitespace-nowrap"
+                                >
+                                    <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                                    {t('actions.open')}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Username section - only show if username exists */}
+                    {password.username && password.username.trim() && (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <UserIcon className="w-4 h-4" />
+                                <span>{t('fields.username')}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl font-mono text-sm border border-gray-200 truncate">
+                                    {password.username}
+                                </div>
+                                <CopyButton 
+                                    text={password.username} 
+                                    label={t('common.copy')} 
+                                    onCopy={() => window.api.incrementUsageCount(password.id)}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Password section */}
+                    {password.type === 'password' && (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <KeyIcon className="w-4 h-4" />
+                                <span>{t('fields.password')}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl font-mono text-sm border border-gray-200 flex items-center justify-between min-w-0">
+                                    <span className={`truncate ${isPasswordVisible ? '' : 'select-none'}`}>
+                                        {isPasswordVisible ? password.password : '••••••••••••••••'}
+                                    </span>
+                                    <button
+                                        onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                                        className="text-gray-400 hover:text-gray-600 transition-colors ml-2"
+                                    >
+                                        {isPasswordVisible ? (
+                                            <EyeSlashIcon className="w-4 h-4" />
+                                        ) : (
+                                            <EyeIcon className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                </div>
+                                <CopyButton 
+                                    text={password.password} 
+                                    label={t('common.copy')} 
+                                    onCopy={() => window.api.incrementUsageCount(password.id)}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* String section */}
+                    {password.type === 'string' && password.stringData && (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <DocumentTextIcon className="w-4 h-4" />
+                                <span>{t('fields.stringData')}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl font-mono text-sm border border-gray-200 max-h-32 overflow-y-auto">
+                                    <pre className="whitespace-pre-wrap break-words">{password.stringData}</pre>
+                                </div>
+                                <CopyButton 
+                                    text={password.stringData} 
+                                    label={t('common.copy')} 
+                                    onCopy={() => window.api.incrementUsageCount(password.id)}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Base64 section */}
+                    {password.type === 'base64' && password.base64Data && (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <DocumentTextIcon className="w-4 h-4" />
+                                <span>{t('fields.base64Data')}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl font-mono text-sm border border-gray-200 max-h-32 overflow-y-auto">
+                                    <pre className="whitespace-pre-wrap break-all">{password.base64Data}</pre>
+                                </div>
+                                <CopyButton 
+                                    text={password.base64Data} 
+                                    label={t('actions.copyRaw')} 
+                                    onCopy={() => window.api.incrementUsageCount(password.id)}
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        setDataDisplayModal({
+                                            isOpen: true,
+                                            title: t('vault.base64FullDisplay'),
+                                            data: password.base64Data,
+                                            type: 'base64'
+                                        });
+                                    }}
+                                    className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
+                                >
+                                    {t('actions.showInModal')}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* JSON section */}
+                    {password.type === 'json' && password.jsonData && (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <DocumentTextIcon className="w-4 h-4" />
+                                <span>{t('fields.jsonData')}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl font-mono text-sm border border-gray-200 max-h-32 overflow-y-auto">
+                                    <pre className="whitespace-pre-wrap break-words">{password.jsonData}</pre>
+                                </div>
+                                <CopyButton 
+                                    text={password.jsonData} 
+                                    label={t('common.copy')} 
+                                    onCopy={() => window.api.incrementUsageCount(password.id)}
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        setDataDisplayModal({
+                                            isOpen: true,
+                                            title: t('vault.jsonFullDisplay'),
+                                            data: password.jsonData,
+                                            type: 'json'
+                                        });
+                                    }}
+                                    className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
+                                >
+                                    {t('actions.showInModal')}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MFA section */}
+                    {password.type === 'mfa' && password.secret && (
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <ClockIcon className="w-4 h-4" />
+                                    <span>{t('fields.totpCode')}</span>
+                                </div>
+                                <button
+                                    onClick={generateTOTPQRCode}
+                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 hover:bg-green-200 text-green-700 rounded-md transition-colors duration-200"
+                                    title={t('actions.qrCode')}
+                                >
+                                    <QrCodeIcon className="w-3 h-3" />
+                                    {t('actions.qrCode')}
+                                </button>
+                            </div>
+                            <TOTPDisplay
+                                secret={password.secret}
+                                issuer={password.website || 'Ciphora'}
+                                accountName={password.username || 'Account'}
+                            />
+
+                            {/* 二维码显示 */}
+                            {showQRCode && (
+                                <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-gray-700">{t('vault.totpQrCode')}</span>
+                                        <button
+                                            onClick={() => setShowQRCode(false)}
+                                            className="text-gray-400 hover:text-gray-600"
+                                        >
+                                            <XMarkIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <div className="flex justify-center">
+                                        <div id={`qrcode-container-${password.id}`} className="p-2 bg-white rounded border">
+                                            {/* 二维码将在这里显示 */}
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2 text-center">
+                                        {t('vault.totpQrCodeDesc')}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Content */}
-            <div className="px-6 pb-6 space-y-4">
-                <DashedLine />
-
-                {/* URL section - only show if url exists and showUrl is true */}
-                {password.url && password.showUrl && (
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <GlobeAltIcon className="w-4 h-4" />
-                            <span>网址</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl text-sm border border-gray-200 truncate">
-                                {password.url}
-                            </div>
-                            <button
-                                onClick={async () => {
-                                    const fullUrl = password.url + (password.urlSuffix || '');
-                                    if (window.api && window.api.openUrl) {
-                                        await window.api.openUrl(fullUrl);
-                                    } else {
-                                        window.open(fullUrl, '_blank');
-                                    }
-                                }}
-                                className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl text-sm font-medium transition-colors whitespace-nowrap"
-                            >
-                                <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-                                打开
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Username section - only show if username exists */}
-                {password.username && password.username.trim() && (
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <UserIcon className="w-4 h-4" />
-                            <span>用户名</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl font-mono text-sm border border-gray-200">
-                                {password.username}
-                            </div>
-                            <CopyButton text={password.username} label="复制" />
-                        </div>
-                    </div>
-                )}
-
-                {/* Password section */}
-                {password.type === 'password' && (
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <KeyIcon className="w-4 h-4" />
-                            <span>密码</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl font-mono text-sm border border-gray-200 flex items-center justify-between">
-                                <span className={isPasswordVisible ? '' : 'select-none'}>
-                                    {isPasswordVisible ? password.password : '••••••••••••••••'}
-                                </span>
-                                <button
-                                    onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    {isPasswordVisible ? (
-                                        <EyeSlashIcon className="w-4 h-4" />
-                                    ) : (
-                                        <EyeIcon className="w-4 h-4" />
-                                    )}
-                                </button>
-                            </div>
-                            <CopyButton text={password.password} label="复制" />
-                        </div>
-                    </div>
-                )}
-
-                {/* String section */}
-                {password.type === 'string' && password.stringData && (
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <DocumentTextIcon className="w-4 h-4" />
-                            <span>字符串数据</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl font-mono text-sm border border-gray-200 max-h-32 overflow-y-auto">
-                                <pre className="whitespace-pre-wrap break-words">{password.stringData}</pre>
-                            </div>
-                            <CopyButton text={password.stringData} label="复制" />
-                        </div>
-                    </div>
-                )}
-
-                {/* Base64 section */}
-                {password.type === 'base64' && password.base64Data && (
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <DocumentTextIcon className="w-4 h-4" />
-                            <span>Base64数据</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl font-mono text-sm border border-gray-200 max-h-32 overflow-y-auto">
-                                <pre className="whitespace-pre-wrap break-all">{password.base64Data}</pre>
-                            </div>
-                            <CopyButton text={password.base64Data} label="复制原始" />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => {
-                                    setDataDisplayModal({
-                                        isOpen: true,
-                                        title: 'Base64完整显示',
-                                        data: password.base64Data,
-                                        type: 'base64'
-                                    });
-                                }}
-                                className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
-                            >
-                                弹窗显示
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* JSON section */}
-                {password.type === 'json' && password.jsonData && (
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <DocumentTextIcon className="w-4 h-4" />
-                            <span>JSON数据</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-50 px-4 py-3 rounded-xl font-mono text-sm border border-gray-200 max-h-32 overflow-y-auto">
-                                <pre className="whitespace-pre-wrap break-words">{password.jsonData}</pre>
-                            </div>
-                            <CopyButton text={password.jsonData} label="复制" />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => {
-                                    setDataDisplayModal({
-                                        isOpen: true,
-                                        title: 'JSON完整显示',
-                                        data: password.jsonData,
-                                        type: 'json'
-                                    });
-                                }}
-                                className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
-                            >
-                                弹窗显示
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* MFA section */}
-                {password.type === 'mfa' && password.secret && (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <ClockIcon className="w-4 h-4" />
-                                <span>动态验证码</span>
-                            </div>
-                            <button
-                                onClick={generateTOTPQRCode}
-                                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 hover:bg-green-200 text-green-700 rounded-md transition-colors duration-200"
-                                title="生成二维码"
-                            >
-                                <QrCodeIcon className="w-3 h-3" />
-                                二维码
-                            </button>
-                        </div>
-                        <TOTPDisplay
-                            secret={password.secret}
-                            issuer={password.website || 'Ciphora'}
-                            accountName={password.username || 'Account'}
-                        />
-
-                        {/* 二维码显示 */}
-                        {showQRCode && (
-                            <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm font-medium text-gray-700">TOTP 二维码</span>
-                                    <button
-                                        onClick={() => setShowQRCode(false)}
-                                        className="text-gray-400 hover:text-gray-600"
-                                    >
-                                        <XMarkIcon className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <div className="flex justify-center">
-                                    <div id={`qrcode-container-${password.id}`} className="p-2 bg-white rounded border">
-                                        {/* 二维码将在这里显示 */}
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2 text-center">
-                                    使用 Google Authenticator 等应用扫描此二维码
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )}
-
+            {/* Footer - fixed at bottom */}
+            <div className="px-6 pb-6 pt-2 space-y-4">
                 {/* Additional info */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-[10px]">
                     <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">创建时间</p>
-                        <p className="font-medium">{formatDate(password.createdAt)}</p>
+                        <p className="text-gray-400 uppercase tracking-wider mb-1">{t('fields.createdAt')}</p>
+                        <p className="font-medium text-gray-600">{formatDate(password.createdAt)}</p>
                     </div>
                     <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">最后更新</p>
-                        <p className="font-medium">{formatDate(password.updatedAt)}</p>
+                        <p className="text-gray-400 uppercase tracking-wider mb-1">{t('fields.updatedAt')}</p>
+                        <p className="font-medium text-gray-600">{formatDate(password.updatedAt)}</p>
                     </div>
                 </div>
 
                 <DashedLine />
 
                 {/* Notes info */}
-                {password.notes && (
-                    <div className="bg-gray-50 p-4 rounded-xl flex items-center space-x-3">
-                        <RectangleStackIcon className="w-5 h-5 text-gray-600" />
-                        <div>
-                            <p className="font-medium text-gray-900 text-sm">{password.notes}</p>
+                {password.notes ? (
+                    <div className="bg-gray-50 p-3 rounded-xl flex items-center space-x-3 border border-gray-100">
+                        <RectangleStackIcon className="w-4 h-4 text-gray-400" />
+                        <div className="min-w-0">
+                            <p className="font-medium text-gray-600 text-xs truncate">{password.notes}</p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="bg-gray-50 p-3 rounded-xl flex items-center space-x-3 border border-gray-100 opacity-50">
+                        <GlobeAltIcon className="w-4 h-4 text-gray-400" />
+                        <div className="min-w-0">
+                            <p className="font-medium text-gray-400 text-xs truncate">{password.website || 'No notes'}</p>
                         </div>
                     </div>
                 )}
-                {
-                    !password.notes && password.website && (
-                        <div className="bg-gray-50 p-4 rounded-xl flex items-center space-x-3">
-                            <GlobeAltIcon className="w-5 h-5 text-gray-600" />
-                            <div>
-                                <p className="font-medium text-gray-900 text-sm">{password.website}</p>
-                            </div>
-                        </div>
-                    )
-                }
             </div>
 
             {/* 数据显示模态框 */}
@@ -468,4 +493,4 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
     );
 };
 
-export default PasswordCard; 
+export default PasswordCard;

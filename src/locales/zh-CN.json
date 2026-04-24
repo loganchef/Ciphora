@@ -1,0 +1,652 @@
+{
+  "common": {
+    "add": "添加",
+    "edit": "编辑",
+    "delete": "删除",
+    "cancel": "取消",
+    "save": "保存",
+    "confirm": "确认",
+    "search": "搜索",
+    "loading": "加载中...",
+    "close": "关闭",
+    "copy": "复制",
+    "copied": "已复制",
+    "manage": "管理",
+    "all": "全部",
+    "ungrouped": "未分组",
+    "continue": "继续",
+    "error": "错误",
+    "importSuccess": "导入成功！",
+    "exportSuccess": "导出成功！",
+    "backupSuccess": "备份创建成功！",
+    "restoreSuccess": "恢复成功！",
+    "updateSuccess": "更新成功",
+    "deleteSuccess": "删除成功",
+    "saving": "保存中...",
+    "unknown": "未知",
+    "templateDownloadSuccess": "模板下载成功",
+    "unknownWebsite": "未知网站",
+    "noUsername": "无用户名",
+    "none": "无",
+    "fileTypes": {
+      "excel": "Excel文件",
+      "csv": "CSV文件",
+      "ciphora": "Ciphora备份文件"
+    },
+    "strengths": {
+      "weak": "弱",
+      "medium": "中等",
+      "strong": "强",
+      "veryStrong": "很强"
+    },
+    "suggestion": "建议",
+    "qrCodeAnalysis": "二维码解析",
+    "pasteInstructions": "直接粘贴：在输入框中粘贴文字或图片，图片会自动解析",
+    "selectImageInstructions": "选择图片：从文件中选择包含二维码的图片",
+    "newAccount": "新账户",
+    "unnamed": "未命名",
+    "optional": "可选"
+  },
+  "dataTypes": {
+    "password": "密码",
+    "mfa": "MFA密钥",
+    "base64": "Base64数据",
+    "string": "字符串",
+    "json": "JSON"
+  },
+  "fields": {
+    "website": "网站/应用名称",
+    "url": "网址 (可选)",
+    "urlSuffix": "登录后缀 (可选)",
+    "showUrl": "在卡片上显示网址",
+    "username": "用户名/标识",
+    "password": "密码",
+    "passwordStrength": "密码强度",
+    "secret": "MFA密钥",
+    "base64Data": "Base64数据",
+    "stringData": "字符串数据",
+    "jsonData": "JSON数据",
+    "notes": "备注 (可选)",
+    "group": "分组 (可选)",
+    "dataType": "数据类型",
+    "selectGroup": "选择分组",
+    "totpCode": "动态验证码",
+    "createdAt": "创建时间",
+    "updatedAt": "最后更新"
+  },
+  "placeholders": {
+    "website": {
+      "password": "比如 qq.com / bilibili user",
+      "mfa": "比如 Google Authenticator / Microsoft Authenticator",
+      "base64": "比如 证书文件 / 密钥文件",
+      "string": "比如 API密钥 / 令牌",
+      "json": "比如 配置文件 / 数据文件"
+    },
+    "username": {
+      "password": "输入用户名或邮箱",
+      "base64": "输入文件名称或标识",
+      "string": "输入数据标识或名称",
+      "json": "输入配置名称或标识"
+    },
+    "password": "输入密码",
+    "secret": "输入Base32格式的MFA密钥",
+    "base64Data": "输入或粘贴Base64编码的数据",
+    "stringData": "输入要存储的字符串数据",
+    "jsonData": "输入JSON数据，例如: {\"key\": \"value\", \"number\": 123}",
+    "notes": "添加任何备注信息",
+    "search": "搜索网站、用户名或描述...",
+    "url": "例如: https://www.example.com",
+    "urlSuffix": "例如: /login 或 /auth",
+    "dataType": "选择数据类型"
+  },
+  "actions": {
+    "generate": "生成",
+    "show": "显示",
+    "hide": "隐藏",
+    "expand": "展开",
+    "collapse": "收起",
+    "scanQR": "扫描二维码",
+    "uploadImage": "选择图片",
+    "saveRecord": "保存记录",
+    "saveChanges": "保存更改",
+    "createGroup": "创建分组",
+    "cancelEdit": "取消编辑",
+    "open": "打开",
+    "qrCode": "二维码",
+    "showInModal": "弹窗显示",
+    "copyRaw": "复制原始",
+    "importData": "导入数据",
+    "exportData": "导出数据",
+    "downloadTemplate": "下载模板",
+    "startImport": "开始导入",
+    "startExport": "开始导出",
+    "confirmImport": "确认导入"
+  },
+  "errors": {
+    "unsupportedFileType": "不支持的文件类型",
+    "importFailed": "导入失败",
+    "exportFailed": "导出失败",
+    "addFailed": "添加失败",
+    "addError": "添加过程中发生错误",
+    "updateFailed": "更新失败",
+    "deleteFailed": "删除失败",
+    "readFailed": "读取文件失败",
+    "invalidMfaKey": "未检测到有效的 MFA密钥，请确保二维码包含正确的密钥格式",
+    "noQrCodeDetected": "未检测到有效的二维码，请确保图片中包含清晰的二维码",
+    "qrCodeParseFailed": "二维码解析失败，请重试或手动输入 MFA 密钥",
+    "noQrCodeInFile": "未检测到有效的二维码，请选择包含二维码的图片",
+    "fileParseFailed": "文件解析失败，请重试",
+    "qrCodeGenerateFailed": "生成二维码失败，请重试",
+    "templateNotSupported": "该格式不支持模板下载",
+    "templateGenerateFailed": "模板生成失败"
+  },
+  "vault": {
+    "deleteConfirm": "您确定要删除 {{website}} 吗？此操作无法撤销。",
+    "noResults": "未找到结果",
+    "noResultsDesc": "没找到匹配您的搜索条件的条目。",
+    "noPasswords": "保险库是空的",
+    "noPasswordsDesc": "开始添加您的第一个密码条目，它将以最高强度加密存储。",
+    "addFirstPassword": "添加您的第一个条目",
+    "addNewRecord": "添加新记录",
+    "editRecord": "编辑记录",
+    "totpQrCode": "TOTP 二维码",
+    "totpQrCodeDesc": "使用 Google Authenticator 等应用扫描此二维码",
+    "base64FullDisplay": "Base64完整显示",
+    "jsonFullDisplay": "JSON完整显示"
+  },
+  "groups": {
+    "edit": "编辑分组",
+    "manage": "管理分组",
+    "namePlaceholder": "分组名称，如「工作」「个人」",
+    "bgColor": "标签背景色",
+    "iconColor": "图标颜色",
+    "icon": "分组图标",
+    "existingGroups": "已创建分组",
+    "noGroups": "暂无分组，创建第一个分组吧",
+    "deleteConfirm": "确定删除此分组？分组内密码将归入\"未分组\"",
+    "allGroups": "全部分组",
+    "selectCount": "已选择 {{count}} 个",
+    "manageGroups": "管理分组",
+    "categories": {
+      "System": "常用",
+      "Business": "工作",
+      "Buildings": "建筑",
+      "Finance": "金融",
+      "Device": "设备",
+      "Map": "地图",
+      "User & Faces": "用户",
+      "Game & Sports": "娱乐",
+      "Others": "其他"
+    }
+  },
+  "cimbar": {
+    "title": "Cimbar 离线传输",
+    "waiting": "等待生成二维码...",
+    "selectAtLeastOne": "请选择至少一条密码",
+    "noSelection": "未选择条目",
+    "generateFailed": "生成失败",
+    "generateSuccess": "已生成 {{count}} 条密码的二维码",
+    "decodeSuccess": "✅ 解析完成，文件已下载",
+    "decode": "解析",
+    "sharePassword": "分享密码",
+    "selectRange": "选择范围 ({{count}}/{{total}})",
+    "selectItemsPlaceholder": "请选择密码项...",
+    "encryptionNone": "无",
+    "encryptionFixed": "固定",
+    "encryptionAuto": "随机",
+    "secureOfflineTransfer": "安全离线传输",
+    "opticalStreamProtocol": "光学流传输协议",
+    "waveformActive": "波形传输中",
+    "scanningStream": "扫描流",
+    "scanningStreamDesc": "对准另一台设备的动态二维码",
+    "linkActive": "链路已连接",
+    "selectAll": "全选",
+    "deselectAll": "取消全选",
+    "setGroup": "选",
+    "clearGroup": "清",
+    "encryptionLabel": "加密",
+    "payloadLabel": "传输内容",
+    "zoom": "放大",
+    "received": "接收完成",
+    "reset": "重置",
+    "openCamera": "打开摄像头",
+    "stop": "停止",
+    "importFile": "导入文件",
+    "loading": "加载中",
+    "analyzing": "正在分析 (帧 {{frame}})",
+    "importSuccess": "导入成功",
+    "cameraStarting": "启动摄像头...",
+    "engineError": "引擎初始化异常",
+    "cameraError": "访问失败: {{error}}",
+    "videoPlayError": "视频播放失败",
+    "videoParsingFile": "正在解析视频文件...",
+    "search": "搜索...",
+    "usageGuide": "操作指南",
+    "transferReady": "传输就绪 ({{count}} 项)",
+    "updatingStream": "正在更新流数据...",
+    "generateError": "二维码生成失败",
+    "ready": "二维码已就绪",
+    "decodeError": "解码失败",
+    "tips": {
+      "title": "使用提示",
+      "item1": "生成模式会自动编码选中的密码条目",
+      "item2": "可设置独立分享密码保护传输数据",
+      "item3": "解析需实时摄像头,截图无效",
+      "item4": "解密使用导入功能或命令行工具"
+    }
+  },
+  "modals": {
+    "password": {
+      "importBackupTitle": "🔐 输入备份密码",
+      "createBackupTitle": "🔐 创建备份密码",
+      "restoreBackupTitle": "🔐 恢复备份密码",
+      "exportBackupTitle": "🔐 设置导出密码",
+      "defaultTitle": "🔐 输入密码",
+      "importBackupMessage": "请输入Ciphora备份文件的密码以继续导入",
+      "createBackupMessage": "请设置备份文件的密码",
+      "restoreBackupMessage": "请输入备份文件的密码以继续恢复",
+      "exportBackupMessage": "请设置导出文件的密码",
+      "defaultMessage": "请输入密码",
+      "placeholder": "请输入密码"
+    },
+    "importExport": {
+      "importSubtitle": "选择要导入的文件格式",
+      "exportSubtitle": "选择要导出的文件格式",
+      "importPrompt": "请选择要导入的文件格式：",
+      "exportPrompt": "请选择要导出的文件格式：",
+      "selectFormatFirst": "请先选择格式",
+      "excelImportDesc": "从 .xlsx/.xls 文件导入数据",
+      "csvImportDesc": "从 .csv/.txt 文件导入数据",
+      "ciphoraImportDesc": "从 .ciphora 备份文件恢复",
+      "excelExportDesc": "导出为 .xlsx 格式",
+      "csvExportDesc": "导出为 .csv 格式",
+      "ciphoraExportDesc": "导出为 .ciphora 备份格式",
+      "templateDefaultName": "Ciphora导入模板",
+      "examples": {
+        "notes1": "示例备注",
+        "desc1": "示例描述",
+        "notes2": "GitHub账户",
+        "desc2": "GitHub账户密码",
+        "notes3": "MFA验证码",
+        "desc3": "两步验证"
+      }
+    },
+    "importPreview": {
+      "title": "导入预览",
+      "totalCount": "共 {{count}} 条",
+      "conflictCount": "{{count}} 个冲突",
+      "modeKeep": "保持现有",
+      "modeSmart": "智能更新",
+      "modeLatest": "使用导入",
+      "modeBoth": "保留两者",
+      "keepExisting": "保持现有",
+      "useImported": "全部导入",
+      "keepBoth": "全部保留",
+      "confirmImport": "确认导入"
+    },
+    "backend": {
+      "encryption_failed": "加密失败",
+      "setup_success": "主密码设置成功",
+      "verification_failed": "验证失败",
+      "master_password_not_set": "未设置主密码",
+      "parse_groups_failed": "解析分组失败",
+      "serialize_groups_failed": "序列化分组失败",
+      "group_not_found": "分组不存在",
+      "import_completed": "导入完成",
+      "serialization_failed": "序列化失败",
+      "backup_password_incorrect_or_file_corrupted": "备份密码错误或文件已损坏",
+      "legacy_backup_parse_failed": "无法解析旧版备份文件",
+      "unsupported_backup_format": "备份文件格式不受支持",
+      "backup_parse_failed": "解析备份失败",
+      "restore_success": "成功恢复 {{count}} 条记录",
+      "entry_not_found": "记录不存在",
+      "no_passwords_available_to_share": "暂无可分享的密码",
+      "no_entries_selected": "未选择任何密码记录",
+      "no_vault_data_available": "暂无可用密码数据",
+      "not_authenticated": "未认证",
+      "parse_settings_failed": "解析设置失败",
+      "serialize_settings_failed": "序列化设置失败",
+      "parse_autoLock_failed": "解析自动锁定设置失败",
+      "parse_passwordGenerator_failed": "解析密码生成设置失败",
+      "parse_ui_settings_failed": "解析界面设置失败",
+      "parse_mfa_settings_failed": "解析 MFA 设置失败",
+      "parse_importExport_settings_failed": "解析导入导出设置失败",
+      "unsupported_setting_item": "不支持的设置项",
+      "decode_secret_failed": "解码密钥失败"
+    },
+    "security": {
+      "title": "导入预览",
+      "totalCount": "共 {{count}} 条",
+      "conflictCount": "{{count}} 个冲突",
+      "modeAdd": "仅添加",
+      "modeUpdate": "智能更新",
+      "modeReplace": "完全替换",
+      "keepExisting": "保留现有",
+      "useImported": "使用导入"
+    },
+    "security": {
+      "title": "安全加密原理",
+      "subtitle": "Ciphora 安全架构说明",
+      "tabs": {
+        "overview": "安全概览",
+        "encryption": "加密原理",
+        "architecture": "系统架构"
+      },
+      "overview": {
+        "title": "零信任本地加密",
+        "subtitle": "所有数据仅在本地处理，永不上传",
+        "desc": "Ciphora 采用军事级加密算法，主密码永远不会以明文形式存储，即使应用源代码完全公开，攻击者也无法在不知道主密码的情况下解密你的数据。"
+      },
+      "features": {
+        "aes": {
+          "name": "AES-256-GCM",
+          "desc": "带认证标签的加密模式，同时保证机密性与完整性"
+        },
+        "argon2": {
+          "name": "Argon2id KDF",
+          "desc": "抗 GPU 暴力破解，内存硬性密钥派生函数"
+        },
+        "deviceBinding": {
+          "name": "设备绑定",
+          "desc": "每台设备唯一 ID 参与密钥派生，防止跨设备暴力破解"
+        },
+        "totp": {
+          "name": "TOTP 双因素",
+          "desc": "内置 TOTP 生成与验证，支持双因素安全登录"
+        }
+      },
+      "commitments": {
+        "title": "安全承诺",
+        "item1": "主密码从不以明文存储，仅在内存中短暂存在用于解密",
+        "item2": "完全离线运行，所有加密解密均在本地完成，不依赖网络",
+        "item3": "每条记录使用独立随机 Nonce，相同内容加密结果不同",
+        "item4": "代码完全开源，加密算法透明可审计，拒绝安全通过混淆"
+      },
+      "encryption": {
+        "title": "加密流程",
+        "step1": {
+          "title": "主密码输入",
+          "desc": "用户输入主密码，系统获取设备唯一 ID"
+        },
+        "step2": {
+          "title": "Argon2id 密钥派生",
+          "desc": "结合随机盐值通过 Argon2id 派生 256 位对称密钥"
+        },
+        "step3": {
+          "title": "AES-256-GCM 加密",
+          "desc": "生成随机 96-bit Nonce，加密密码数据"
+        },
+        "step4": {
+          "title": "Base64 持久化",
+          "desc": "将密文、Nonce、盐一同编码后存储到本地文件"
+        },
+        "specs": {
+          "title": "算法参数",
+          "keyLength": "密钥长度",
+          "tagLength": "Tag 长度",
+          "securityProps": "安全属性",
+          "aead": "AEAD 认证加密",
+          "memoryUsage": "内存用量",
+          "iterations": "迭代次数",
+          "salt": "盐值",
+          "output": "输出",
+          "keyOutput": "32 字节对称密钥"
+        }
+      },
+      "attacks": {
+        "title": "攻击防护",
+        "bruteforce": "暴力破解",
+        "bruteforceProt": "Argon2id 高内存消耗",
+        "dictionary": "字典攻击",
+        "dictionaryProt": "随机盐 + 设备 ID 绑定",
+        "tamper": "数据篡改",
+        "tamperProt": "GCM 认证标签检测",
+        "rainbow": "彩虹表",
+        "rainbowProt": "每次派生唯一盐值"
+      },
+      "architecture": {
+        "title": "技术栈",
+        "frontend": "前端层 · React + Vite",
+        "backend": "后端层 · Rust (Tauri)",
+        "storage": "存储层 · 本地加密文件",
+        "storageDesc": "本地加密文件",
+        "auth": "登录认证",
+        "pwdMgr": "密码管理",
+        "mfa": "MFA 验证",
+        "importExport": "导入导出",
+        "authService": "认证服务",
+        "cryptoEngine": "加密引擎",
+        "pwdStorage": "密码存储",
+        "mfaService": "MFA 服务",
+        "groupMgr": "分组管理",
+        "backupRestore": "备份恢复",
+        "vaultFile": "加密密码库",
+        "settingsFile": "应用配置",
+        "groupsFile": "分组数据"
+      },
+      "principles": {
+        "title": "设计原则",
+        "local": {
+          "title": "完全本地化",
+          "desc": "不依赖任何网络服务，所有操作在设备上完成"
+        },
+        "rust": {
+          "title": "Rust 内存安全",
+          "desc": "后端使用 Rust 语言，编译期消除内存漏洞"
+        },
+        "leastPriv": {
+          "title": "最小权限",
+          "desc": "Tauri 严格限制前端对系统资源的访问权限"
+        },
+        "defense": {
+          "title": "纵深防御",
+          "desc": "多层安全机制：加密 + 认证 + 设备绑定"
+        }
+      }
+    }
+  },
+  "login": {
+    "welcomeBack": "欢迎回来",
+    "enterPassword": "请输入主密码",
+    "loginFailed": "登录失败",
+    "loginError": "登录过程中发生错误",
+    "verifying": "验证中...",
+    "unlockVault": "解锁保险库",
+    "forgotTitle": "忘记主密码解决方案",
+    "forgotMessage": "如果您忘记了主密码，可以重置所有数据重新开始",
+    "forgotDetail": "此操作将：\n• 永久删除所有密码数据\n• 清除所有设置\n• 重置应用状态\n\n此操作无法撤销！\n\n请确认您要继续此操作。",
+    "resetConfirmTitle": "最后确认",
+    "resetConfirmMessage": "您确定要重置所有数据吗？",
+    "resetConfirmDetail": "这将清除所有密码和设置，无法恢复！\n\n点击\"确定重置\"继续，点击\"取消\"中止操作。",
+    "confirmReset": "确定重置",
+    "resetSuccessTitle": "重置完成",
+    "resetSuccessMessage": "所有数据已重置！",
+    "resetSuccessDetail": "应用将重新启动，请重新设置主密码。",
+    "resetFailedTitle": "重置失败",
+    "resetFailedMessage": "重置数据失败",
+    "resetError": "重置数据过程中发生错误",
+    "havingTrouble": "遇到问题？",
+    "forgotPasswordHint": "忘记主密码？"
+  },
+  "header": {
+    "vault": "保险库",
+    "dashboard": "操作面板",
+    "logout": "退出"
+  },
+  "dashboard": {
+    "addPassword": {
+      "name": "添加新密码",
+      "description": "快速创建条目，支持网站、MFA、JSON、字符串等多种格式。",
+      "cta": "立即添加"
+    },
+    "passwordCount": {
+      "name": "密码数量",
+      "description": "您已经保存了多少密码？"
+    },
+    "security": {
+      "name": "安全加密",
+      "description": "Argon2id 密钥派生 + AES-256-GCM 全程离线加密，本地存储。",
+      "cta": "查看原理"
+    },
+    "exportBackup": {
+      "name": "导出备份",
+      "description": "及时导出加密备份，避免数据丢失。",
+      "cta": "创建备份"
+    },
+    "importData": {
+      "name": "导入数据",
+      "description": "支持 CSV/Excel/Ciphora 备份导入。",
+      "cta": "导入数据"
+    },
+    "cimbar": {
+      "name": "二维码传输",
+      "description": "生成高速传输二维码，或切换到接收模式",
+      "cta": "开始传输"
+    }
+  },
+  "setup": {
+    "title": "设置主密码",
+    "masterPassword": "主密码",
+    "masterPasswordPlaceholder": "输入您的主密码",
+    "confirmPassword": "确认密码",
+    "confirmPasswordPlaceholder": "再次输入您的主密码",
+    "passwordMismatch": "两次输入的密码不一致",
+    "passwordEmpty": "密码长度不能为空",
+    "initializing": "初始化中...",
+    "startUsing": "开始使用",
+    "initFailed": "初始化失败",
+    "initError": "初始化过程中发生错误",
+    "tagline": "离线存储 • 端到端加密 • 边缘安全 • 隐私优先"
+  },
+  "settings": {
+    "title": "设置",
+    "language": "语言切换",
+    "languageDescription": "选择您偏好的应用显示语言",
+    "theme": "主题",
+    "security": "安全",
+    "categoryTitle": "设置分类",
+    "sections": {
+      "general": "基本设置",
+      "password": "重置主密码",
+      "donation": "项目详情 & 支持",
+      "danger": "危险区域"
+    },
+    "general": {
+      "hideSensitiveButtons": {
+        "name": "隐藏敏感按钮",
+        "description": "隐藏删除和清空等危险操作按钮"
+      },
+      "showPasswordStrength": {
+        "name": "显示密码强度",
+        "description": "在密码输入时显示强度指示器"
+      },
+      "autoLock": {
+        "name": "自动锁定",
+        "description": "空闲一段时间后自动锁定应用"
+      },
+      "autoLockTimeout": {
+        "name": "锁定超时时间",
+        "description": "设置空闲多少分钟后自动锁定",
+        "1min": "1 分钟",
+        "5min": "5 分钟",
+        "15min": "15 分钟",
+        "30min": "30 分钟",
+        "1hour": "1 小时",
+        "never": "永不"
+      },
+      "defaultLength": {
+        "name": "默认生成密码长度",
+        "description": "设置默认生成密码的长度"
+      },
+      "generatorOptions": {
+        "title": "密码生成器选项",
+        "uppercase": "包含大写字母 (A-Z)",
+        "lowercase": "包含小写字母 (a-z)",
+        "numbers": "包含数字 (0-9)",
+        "symbols": "包含符号 (!@#$%^&*)",
+        "similar": "排除相似字符 (0O1lI)",
+        "custom": "自定义字符集",
+        "customPlaceholder": "留空使用默认字符集"
+      },
+      "cardOrder": {
+        "name": "卡片排序模式",
+        "description": "设置卡片的默认显示顺序",
+        "usage": "使用率 (点击次数)",
+        "createdAt": "创建时间",
+        "updatedAt": "最后更新",
+        "username": "用户名"
+      },
+      "pagination": {
+        "enable": {
+          "name": "启用分页",
+          "description": "当条目较多时分页显示"
+        },
+        "pageSize": {
+          "name": "每页显示数量",
+          "description": "设置每页显示的条目数"
+        }
+      }
+    },
+    "password": {
+      "current": "当前密码",
+      "currentPlaceholder": "输入当前密码",
+      "new": "新密码",
+      "projectAddress": "项目地址",
+      "sponsor": "赞助",
+      "newPlaceholder": "输入新密码",
+      "confirm": "确认新密码",
+      "confirmPlaceholder": "再次输入新密码",
+      "resetButton": "重置密码",
+      "mismatch": "新密码和确认密码不匹配",
+      "empty": "新密码不能为空",
+      "success": "主密码已成功重置",
+      "failed": "重置密码失败",
+      "error": "重置密码过程中发生错误"
+    },
+    "donation": {
+      "title": "项目详情 & 支持",
+      "description": "一个安全、开源的密码管理器，支持多种数据类型 and 加密备份",
+      "support": "支持项目",
+      "flower": "🌸一朵花¥1",
+      "lemonade": "🍋柠檬水¥5",
+      "milktea": "🧋奶茶¥12",
+      "lunch": "🍽️午饭¥25",
+      "custom": "自定义¥?",
+      "wechat": "微信支付",
+      "alipay": "支付宝",
+      "footer": "如果对您有帮助，欢迎支持开发"
+    },
+    "danger": {
+      "title": "危险操作",
+      "description": "以下操作具有破坏性，请谨慎操作",
+      "clearPasswords": {
+        "name": "清除所有密码",
+        "description": "此操作将永久删除所有密码数据，无法恢复！",
+        "success": "所有密码已清除"
+      },
+      "resetApp": {
+        "name": "重置应用",
+        "description": "清除所有设置并恢复到初始状态",
+        "confirm": "确定要重置应用吗？这将清除所有设置。"
+      },
+      "resetSettings": {
+        "name": "重置应用设置",
+        "description": "将所有应用设置恢复为默认值，不影响您的密码和分组数据。",
+        "confirm": "确定要将所有设置恢复为默认值吗？此操作不可逆。",
+        "success": "设置已成功重置"
+      },
+      "resetAllData": {
+        "name": "重置所有数据",
+        "hint": "极其危险",
+        "description": "清除所有密码数据和设置，重置应用到初始状态。此操作不可逆！"
+      },
+      "confirmModal": {
+        "title": "⚠️ 危险操作警告",
+        "message": "此操作将永久删除所有密码数据，无法恢复！如果您确定要继续，请在下方输入 'DELETE ALL' 来确认：",
+        "placeholder": "请输入 DELETE ALL",
+        "confirmButton": "确认删除",
+        "textMismatch": "确认文本不匹配，操作已取消"
+      }
+    }
+  }
+}

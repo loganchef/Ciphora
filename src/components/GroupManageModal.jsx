@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { XMarkIcon, PencilSquareIcon, TrashIcon, FolderPlusIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 
 // ─── Icon catalogue ─────────────────────────────────────────────────────────
 // Each entry: [category-label, folder, [file-stems (fill variant)]]
 // For mixed-folder icons we use "folder|stem" notation processed in iconUrl()
 const ICON_CATEGORIES = [
-  ['常用', 'System', [
+  ['System', 'System', [
     'apps-2-fill', 'apps-fill', 'star-fill', 'lock-fill', 'lock-password-fill', 'lock-2-fill', 'lock-unlock-fill', 'lock-star-fill',
     'shield-fill', 'shield-keyhole-fill', 'shield-star-fill', 'shield-check-fill', 'shield-cross-fill', 'shield-flash-fill', 'shield-user-fill',
     'settings-fill', 'settings-2-fill', 'settings-3-fill', 'settings-4-fill', 'settings-5-fill', 'settings-6-fill',
@@ -27,7 +28,7 @@ const ICON_CATEGORIES = [
     'zoom-in-fill', 'zoom-out-fill', 'external-link-fill', 'export-fill', 'import-fill',
     'loader-fill', 'progress-1-fill', 'progress-4-fill', 'progress-8-fill', 'function-fill',
   ]],
-  ['工作', 'Business', [
+  ['Business', 'Business', [
     'briefcase-fill', 'briefcase-2-fill', 'briefcase-3-fill', 'briefcase-4-fill', 'briefcase-5-fill',
     'calendar-fill', 'calendar-2-fill', 'calendar-check-fill', 'calendar-event-fill', 'calendar-schedule-fill', 'calendar-todo-fill', 'calendar-close-fill',
     'mail-fill', 'mail-open-fill', 'mail-send-fill', 'mail-add-fill', 'mail-check-fill', 'mail-close-fill', 'mail-star-fill', 'mail-unread-fill', 'mail-lock-fill',
@@ -47,7 +48,7 @@ const ICON_CATEGORIES = [
     'calculator-fill', 'at-fill', 'attachment-fill', 'record-mail-fill',
     'copyright-fill', 'registered-fill', 'trademark-fill', 'copyleft-fill',
   ]],
-  ['建筑', 'Buildings', [
+  ['Buildings', 'Buildings', [
     'home-fill', 'home-2-fill', 'home-3-fill', 'home-4-fill', 'home-5-fill', 'home-6-fill', 'home-7-fill', 'home-8-fill', 'home-9-fill',
     'home-office-fill', 'home-gear-fill', 'home-heart-fill', 'home-smile-fill', 'home-smile-2-fill', 'home-wifi-fill',
     'building-fill', 'building-2-fill', 'building-3-fill', 'building-4-fill',
@@ -55,7 +56,7 @@ const ICON_CATEGORIES = [
     'store-fill', 'store-2-fill', 'store-3-fill', 'community-fill',
     'ancient-gate-fill', 'ancient-pavilion-fill', 'tent-fill',
   ]],
-  ['金融', 'Finance', [
+  ['Finance', 'Finance', [
     'wallet-fill', 'wallet-2-fill', 'wallet-3-fill',
     'bank-card-fill', 'bank-card-2-fill', 'no-credit-card-fill',
     'money-dollar-circle-fill', 'money-dollar-box-fill', 'money-cny-circle-fill', 'money-cny-box-fill',
@@ -76,7 +77,7 @@ const ICON_CATEGORIES = [
     'secure-payment-fill', 'water-flash-fill', 'increase-decrease-fill', 'currency-fill',
     '24-hours-fill', 'luggage-deposit-fill',
   ]],
-  ['设备', 'Device', [
+  ['Device', 'Device', [
     'computer-fill', 'mac-fill', 'macbook-fill', 'tablet-fill', 'smartphone-fill', 'phone-fill', 'cellphone-fill',
     'tv-fill', 'tv-2-fill', 'remote-control-fill', 'remote-control-2-fill',
     'keyboard-fill', 'keyboard-box-fill', 'mouse-fill',
@@ -98,7 +99,7 @@ const ICON_CATEGORIES = [
     'dual-sim-1-fill', 'dual-sim-2-fill', 'wireless-charging-fill',
     'mobile-download-fill', 'dashboard-2-fill', 'dashboard-3-fill', 'gradienter-fill',
   ]],
-  ['地图', 'Map', [
+  ['Map', 'Map', [
     'map-fill', 'map-2-fill', 'road-map-fill', 'treasure-map-fill',
     'map-pin-fill', 'map-pin-2-fill', 'map-pin-3-fill', 'map-pin-4-fill', 'map-pin-5-fill',
     'map-pin-add-fill', 'map-pin-range-fill', 'map-pin-time-fill', 'map-pin-user-fill',
@@ -118,7 +119,7 @@ const ICON_CATEGORIES = [
     'run-fill', 'walk-fill', 'riding-fill', 'footprint-fill',
     'takeaway-fill', 'signal-tower-fill',
   ]],
-  ['用户', 'User & Faces', [
+  ['User & Faces', 'User & Faces', [
     'user-fill', 'user-2-fill', 'user-3-fill', 'user-4-fill', 'user-5-fill', 'user-6-fill',
     'user-add-fill', 'user-follow-fill', 'user-unfollow-fill', 'user-forbid-fill', 'user-heart-fill',
     'user-location-fill', 'user-minus-fill', 'user-search-fill', 'user-settings-fill', 'user-star-fill',
@@ -136,7 +137,7 @@ const ICON_CATEGORIES = [
     'men-fill', 'women-fill', 'genderless-fill', 'travesti-fill',
     'body-scan-fill', 'voice-recognition-fill',
   ]],
-  ['娱乐', 'Game & Sports', [
+  ['Game & Sports', 'Game & Sports', [
     'game-fill', 'game-2-fill',
     'basketball-fill', 'football-fill', 'baseball-fill', 'golf-ball-fill',
     'billiards-fill', 'ping-pong-fill', 'boxing-fill',
@@ -145,7 +146,7 @@ const ICON_CATEGORIES = [
     'poker-clubs-fill', 'poker-diamonds-fill', 'poker-hearts-fill', 'poker-spades-fill',
     'piano-fill', 'piano-grand-fill',
   ]],
-  ['其他', 'Others', [
+  ['Others', 'Others', [
     'key-fill', 'key-2-fill', 'door-fill', 'door-closed-fill', 'door-open-fill', 'door-lock-fill', 'door-lock-box-fill',
     'bell-fill', 'service-bell-fill',
     'lightbulb-fill', 'lightbulb-flash-fill', 'lightbulb-ai-fill',
@@ -171,22 +172,23 @@ function iconUrl(folder, stem) {
 
 // ─── Colour palette ──────────────────────────────────────────────────────────
 const COLORS = [
-  { hex: '#3B82F6', name: '蓝色' },
-  { hex: '#6366F1', name: '靛蓝' },
-  { hex: '#8B5CF6', name: '紫色' },
-  { hex: '#EC4899', name: '粉色' },
-  { hex: '#EF4444', name: '红色' },
-  { hex: '#F97316', name: '橙色' },
-  { hex: '#F59E0B', name: '黄色' },
-  { hex: '#10B981', name: '绿色' },
-  { hex: '#14B8A6', name: '青绿' },
-  { hex: '#06B6D4', name: '青色' },
-  { hex: '#64748B', name: '灰蓝' },
-  { hex: '#71717A', name: '灰色' },
+  { hex: '#3B82F6', name: 'blue' },
+  { hex: '#6366F1', name: 'indigo' },
+  { hex: '#8B5CF6', name: 'purple' },
+  { hex: '#EC4899', name: 'pink' },
+  { hex: '#EF4444', name: 'red' },
+  { hex: '#F97316', name: 'orange' },
+  { hex: '#F59E0B', name: 'yellow' },
+  { hex: '#10B981', name: 'green' },
+  { hex: '#14B8A6', name: 'teal' },
+  { hex: '#06B6D4', name: 'cyan' },
+  { hex: '#64748B', name: 'bluegray' },
+  { hex: '#71717A', name: 'gray' },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }) => {
+  const { t } = useTranslation();
   const defaultForm = { name: '', color: '#3B82F6', iconColor: '#ffffff', icon: 'System/apps-2-fill' };
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState(defaultForm);
@@ -210,7 +212,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
       setFormData(defaultForm);
       setEditingId(null);
     } catch (err) {
-      alert('操作失败: ' + err.message);
+      alert(t('common.error') + ': ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -225,8 +227,8 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('确定删除此分组？分组内密码将归入"未分组"')) return;
-    try { await onDelete(id); } catch (e) { alert('删除失败: ' + e.message); }
+    if (!confirm(t('groups.deleteConfirm'))) return;
+    try { await onDelete(id); } catch (e) { alert(t('errors.deleteFailed') + ': ' + e.message); }
   };
 
   const handleCancel = () => { setFormData(defaultForm); setEditingId(null); };
@@ -246,7 +248,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
               <FolderPlusIcon className="w-4 h-4 text-white" />
             </div>
             <h3 className="text-base font-semibold text-gray-900">
-              {editingId ? '编辑分组' : '管理分组'}
+              {editingId ? t('groups.edit') : t('groups.manage')}
             </h3>
           </div>
           <button
@@ -281,7 +283,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
               </div>
               <input
                 type="text"
-                placeholder="分组名称，如「工作」「个人」"
+                placeholder={t('groups.namePlaceholder')}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
@@ -293,7 +295,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
             <div className="space-y-3">
               {/* Background color */}
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">标签背景色</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{t('groups.bgColor')}</p>
                 <div className="flex flex-wrap gap-2">
                   {COLORS.map(({ hex, name }) => (
                     <button
@@ -309,7 +311,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
                     </button>
                   ))}
                   <label
-                    title="自定义颜色"
+                    title={t('common.optional')}
                     className="w-7 h-7 rounded-full cursor-pointer transition-transform hover:scale-110 flex items-center justify-center border-2 border-dashed border-gray-300 hover:border-gray-400 overflow-hidden relative"
                     style={{ backgroundColor: !COLORS.find(c => c.hex === formData.color) ? formData.color : 'transparent' }}
                   >
@@ -324,7 +326,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
 
               {/* Icon color */}
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">图标颜色</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{t('groups.iconColor')}</p>
                 <div className="flex flex-wrap gap-2">
                   {COLORS.map(({ hex, name }) => (
                     <button
@@ -344,7 +346,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
                     </button>
                   ))}
                   <label
-                    title="自定义颜色"
+                    title={t('common.optional')}
                     className="w-7 h-7 rounded-full cursor-pointer transition-transform hover:scale-110 flex items-center justify-center overflow-hidden relative"
                     style={{
                       border: `3px solid ${!COLORS.find(c => c.hex === formData.iconColor) ? formData.iconColor : '#D1D5DB'}`,
@@ -363,7 +365,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
 
             {/* Icon picker */}
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">分组图标</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{t('groups.icon')}</p>
 
               {/* Category tabs */}
               <div className="flex gap-1 overflow-x-auto pb-1 mb-3 scrollbar-hide">
@@ -376,7 +378,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                   >
-                    {label}
+                    {t(`groups.categories.${label}`) || label}
                   </button>
                 ))}
               </div>
@@ -430,7 +432,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
                   onClick={handleCancel}
                   className="flex-1 px-4 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
                 >
-                  取消编辑
+                  {t('actions.cancelEdit')}
                 </button>
               )}
               <button
@@ -438,7 +440,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
                 disabled={!formData.name.trim() || saving}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm font-medium shadow-sm"
               >
-                {saving ? '保存中…' : editingId ? '保存更改' : '创建分组'}
+                {saving ? t('common.saving') : editingId ? t('actions.saveChanges') : t('actions.createGroup')}
               </button>
             </div>
           </div>
@@ -446,12 +448,12 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
           {/* ── Existing groups list ── */}
           <div className="p-5">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
-              已创建分组 {groups.length > 0 && `(${groups.length})`}
+              {t('groups.existingGroups')} {groups.length > 0 && `(${groups.length})`}
             </p>
 
             {groups.length === 0 ? (
               <div className="text-center py-6 text-gray-400 text-sm">
-                暂无分组，创建第一个分组吧
+                {t('groups.noGroups')}
               </div>
             ) : (
               <div className="space-y-1.5">

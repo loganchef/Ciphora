@@ -13,7 +13,7 @@ pub fn generate_secret() -> Result<String, String> {
 pub fn verify_token(secret: &str, token: &str) -> Result<bool, String> {
     let secret_bytes = general_purpose::STANDARD
         .decode(secret)
-        .map_err(|e| format!("解码密钥失败: {}", e))?;
+        .map_err(|e| format!("decode_secret_failed: {}", e))?;
 
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -36,7 +36,7 @@ pub fn verify_token(secret: &str, token: &str) -> Result<bool, String> {
 pub fn generate_totp(secret: &str) -> Result<String, String> {
     let secret_bytes = general_purpose::STANDARD
         .decode(secret)
-        .map_err(|e| format!("解码密钥失败: {}", e))?;
+        .map_err(|e| format!("decode_secret_failed: {}", e))?;
 
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -51,7 +51,7 @@ pub fn generate_totp(secret: &str) -> Result<String, String> {
 pub fn generate_next_totp(secret: &str) -> Result<String, String> {
     let secret_bytes = general_purpose::STANDARD
         .decode(secret)
-        .map_err(|e| format!("解码密钥失败: {}", e))?;
+        .map_err(|e| format!("decode_secret_failed: {}", e))?;
 
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

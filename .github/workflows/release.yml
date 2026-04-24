@@ -3,179 +3,226 @@ name: Release Build
 on:
   push:
     tags:
-    - "v*"
+      - "v*"
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-
+  # ─── Desktop: Windows / macOS / Linux ───────────────────────────────────────
+  build-desktop:
     strategy:
+      fail-fast: false
       matrix:
         include:
-        - os: windows-latest
-          platform: win
-          arch: x64
-          target: nsis
-        - os: windows-latest
-          platform: win
-          arch: ia32
-          target: nsis
-        - os: ubuntu-latest
-          platform: linux
-          arch: x64
-          target: AppImage
-        - os: macos-latest
-          platform: mac
-          arch: x64
-          target: dmg
-        - os: macos-latest
-          platform: mac
-          arch: arm64
-          target: dmg
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            arch: x64
+            platform: windows
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+            arch: x86
+            platform: windows
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            arch: x64
+            platform: linux
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            arch: x64
+            platform: macos
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            arch: arm64
+            platform: macos
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: "22"
-        cache: "yarn"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
 
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
-    - name: Build frontend (Unix)
-      if: runner.os != 'Windows'
-      shell: bash
-      run: |
-        # 从 Git tag 获取版本号
-        VERSION=${GITHUB_REF#refs/tags/}
-        VERSION=${VERSION#v}
-        echo "Building version: $VERSION"
-        VERSION=$VERSION yarn build:prod
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libgtk-3-dev \
+            libglib2.0-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev
 
-    - name: Build frontend (Windows)
-      if: runner.os == 'Windows'
-      shell: powershell
-      run: |
-        # 从 Git tag 获取版本号
-        $VERSION = "${{ github.ref }}" -replace "refs/tags/", "" -replace "^v", ""
-        Write-Host "Building version: $VERSION"
-        $env:VERSION = $VERSION; yarn build:prod
+      - name: Install frontend dependencies
+        run: npm install
 
-    - name: Fix app-builder permissions
-      if: matrix.platform == 'linux'
-      run: |
-        chmod +x node_modules/app-builder-bin/linux/x64/app-builder || true
-        chmod +x node_modules/app-builder-bin/linux/ia32/app-builder || true
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Ciphora ${{ github.ref_name }}"
+          releaseBody: |
+            ## Ciphora ${{ github.ref_name }}
 
-    - name: Build Electron app (Windows)
-      if: runner.os == 'Windows'
-      shell: powershell
-      run: |
-        if ("${{ matrix.platform }}" -eq "win") {
-          yarn electron-builder --win --${{ matrix.arch }} --publish=never
-        }
-      env:
-        ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
-        ELECTRON_BUILDER_CACHE: /tmp/electron-builder-cache
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            ### 下载说明
 
-    - name: Build Electron app (Unix)
-      if: runner.os != 'Windows'
-      shell: bash
-      run: |
-        if [ "${{ matrix.platform }}" = "mac" ]; then
-          yarn electron-builder --mac --${{ matrix.arch }} --publish=never
-        elif [ "${{ matrix.platform }}" = "linux" ]; then
-          yarn electron-builder --linux --${{ matrix.arch }} --publish=never
-        fi
-      env:
-        ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
-        ELECTRON_BUILDER_CACHE: /tmp/electron-builder-cache
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            请根据您的系统选择对应的安装包：
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.target }}-${{ github.ref_name }}-${{ github.run_number }}
-        path: |
-          release/*.exe
-          release/*.dmg
-          release/*.AppImage
-          release/*.deb
-          release/*.rpm
-          release/*.snap
-          release/*.zip
-          release/*.tar.gz
-        retention-days: 30
+            - **Windows x64**: `Ciphora_*_x64-setup.exe`
+            - **Windows x86**: `Ciphora_*_x86-setup.exe`
+            - **macOS Apple Silicon**: `Ciphora_*_aarch64.dmg`
+            - **macOS Intel**: `Ciphora_*_x64.dmg`
+            - **Linux**: `Ciphora_*_amd64.AppImage` 或 `.deb`
+            - **Android**: `Ciphora_*.apk`
+            - **iOS**: `Ciphora_*.ipa`（需要自签或 TestFlight）
+          releaseDraft: false
+          prerelease: false
+          args: --target ${{ matrix.target }}
 
-  create-release:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
+  # ─── Android ────────────────────────────────────────────────────────────────
+  build-android:
+    runs-on: ubuntu-22.04
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
 
-    - name: Generate release notes
-      id: release_notes
-      run: |
-        cat > release_notes.md << 'RELEASE_NOTES'
-        ## 🎉 Ciphora ${{ github.ref_name }}
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
 
-        ### ✨ 更新内容
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-        RELEASE_NOTES
+      - name: Install Android NDK
+        run: |
+          sdkmanager --install "ndk;27.0.12077973"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
 
-        # 添加最新 commit 的完整信息
-        git log -1 --pretty=format:"**%s**%n%n%b" >> release_notes.md
+      - name: Install Rust stable + Android targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: |
+            aarch64-linux-android
+            armv7-linux-androideabi
+            i686-linux-android
+            x86_64-linux-android
 
-        cat >> release_notes.md << 'RELEASE_NOTES'
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
 
-        ### 📥 下载说明
+      - name: Install frontend dependencies
+        run: npm install
 
-        请根据您的系统选择对应的安装包：
+      - name: Build frontend
+        run: npm run build
 
-        - **Windows**: 下载 `.exe` 文件（x64 为 64位，ia32 为 32位）
-        - **macOS**: 下载 `.dmg` 文件（arm64 为 Apple Silicon，x64 为 Intel）
-        - **Linux**: 下载 `.AppImage` 文件
+      - name: Initialize Tauri Android project
+        run: npm run tauri:android:init
 
-        ### 📋 最近提交
+      - name: Build Android APK (debug)
+        run: npm run tauri:android:build -- --apk
+        env:
+          NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 
-        ```
-        RELEASE_NOTES
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-${{ github.ref_name }}
+          path: |
+            src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          retention-days: 30
 
-        git log --pretty=format:"%h - %s" -5 >> release_notes.md
+      - name: Upload Android APK to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-        cat >> release_notes.md << 'RELEASE_NOTES'
+  # ─── iOS ────────────────────────────────────────────────────────────────────
+  build-ios:
+    runs-on: macos-latest
 
-        ```
-        RELEASE_NOTES
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        cat release_notes.md
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          artifacts/**/*
-        draft: false
-        prerelease: false
-        body_path: release_notes.md
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Rust stable + iOS targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: |
+            aarch64-apple-ios
+            aarch64-apple-ios-sim
+            x86_64-apple-ios
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Initialize Tauri iOS project
+        run: npm run tauri:ios:init
+
+      - name: Build iOS (simulator, no signing)
+        run: |
+          npm run tauri:ios:build -- --target aarch64-apple-ios-sim
+        env:
+          # 无证书时跳过签名，产物为未签名 ipa（仅限模拟器测试）
+          # 若要发布到 App Store，需配置 APPLE_CERTIFICATE / APPLE_PROVISIONING_PROFILE
+          CODE_SIGNING_ALLOWED: NO
+
+      - name: Package iOS build as IPA
+        run: |
+          mkdir -p ios-artifacts
+          find src-tauri/gen/apple -name "*.app" | head -1 | xargs -I {} bash -c '
+            mkdir -p Payload
+            cp -r "{}" Payload/
+            zip -r ios-artifacts/Ciphora-${{ github.ref_name }}-simulator.ipa Payload
+            rm -rf Payload
+          '
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-${{ github.ref_name }}
+          path: ios-artifacts/*.ipa
+          retention-days: 30
+
+      - name: Upload iOS IPA to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ios-artifacts/*.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

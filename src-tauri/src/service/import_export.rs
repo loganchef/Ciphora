@@ -118,6 +118,21 @@ pub async fn process_import_with_resolution(
                             final_passwords.push(entry.clone());
                         }
                         existing_map.insert(key.clone(), final_passwords.len() - 1);
+                    } else if choice == "both" {
+                        // 保留两者：修改导入项的名称并作为新项添加
+                        let mut new_entry = entry.clone();
+                        let current_website = password_service::get_string_field(&new_entry, "website")
+                            .unwrap_or_else(|| "unknown".into());
+                        
+                        // 修改 website 字段 (或备注) 以示区分
+                        if let Some(obj) = new_entry.as_object_mut() {
+                            obj.insert("website".to_string(), serde_json::Value::String(format!("{} (Imported)", current_website)));
+                            // 重新生成 ID 以避免碰撞
+                            obj.insert("id".to_string(), serde_json::Value::String(uuid::Uuid::new_v4().to_string()));
+                        }
+                        
+                        final_passwords.push(new_entry);
+                        // 不更新 existing_map，因为这是个新 key
                     }
                     continue;
                 }
@@ -157,7 +172,7 @@ pub async fn process_import_with_resolution(
 
     Ok(ImportProcessResult {
         success: true,
-        message: "导入完成".to_string(),
+        message: "import_completed".to_string(),
         imported_count: final_passwords.len(),
     })
 }
@@ -172,7 +187,7 @@ pub async fn create_backup(
     let passwords =
         password_service::load_passwords(master_password, app.clone(), state.clone()).await?;
     let serialized = serde_json::to_string(&passwords)
-        .map_err(|e| format!("序列化失败: {}", e))?;
+        .map_err(|e| format!("serialization_failed: {}", e))?;
 
     let payload = crypto::encrypt_data(&serialized, &backup_password)?;
 
@@ -199,18 +214,18 @@ pub async fn restore_backup(
 ) -> Result<RestoreResponse, String> {
     let decrypted_payload = if let Some(payload) = &backup_data.payload {
         crypto::decrypt_data(payload, &backup_password)
-            .map_err(|_| "备份密码错误或文件已损坏".to_string())?
+            .map_err(|_| "backup_password_incorrect_or_file_corrupted".to_string())?
     } else if let (Some(encrypted), Some(iv)) = (&backup_data.encrypted, &backup_data.iv) {
         // legacy: concatenate iv + ciphertext and尝试解密（假设与 payload 相同格式）
         let legacy_blob = format!("{}{}", encrypted, iv);
         crypto::decrypt_data(&legacy_blob, &backup_password)
-            .map_err(|_| "无法解析旧版备份文件".to_string())?
+            .map_err(|_| "legacy_backup_parse_failed".to_string())?
     } else {
-        return Err("备份文件格式不受支持".to_string());
+        return Err("unsupported_backup_format".to_string());
     };
 
     let mut passwords: Vec<PasswordEntry> = serde_json::from_str(&decrypted_payload)
-        .map_err(|e| format!("解析备份失败: {}", e))?;
+        .map_err(|e| format!("backup_parse_failed: {}", e))?;
 
     for entry in passwords.iter_mut() {
         password_service::normalize_entry(entry);
@@ -228,7 +243,7 @@ pub async fn restore_backup(
 
     Ok(RestoreResponse {
         success: true,
-        message: format!("成功恢复 {} 条记录", count),
+        message: "restore_success".to_string(),
         restored_count: count,
     })
 }

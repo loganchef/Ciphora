@@ -20,10 +20,10 @@ pub async fn save_passwords(
     ensure_authenticated(&state)?;
 
     let json_data = serde_json::to_string(&passwords)
-        .map_err(|e| format!("序列化失败: {}", e))?;
+        .map_err(|e| format!("serialization_failed: {}", e))?;
 
     let encrypted = crypto::encrypt_data(&json_data, &master_password)
-        .map_err(|e| format!("加密失败: {}", e))?;
+        .map_err(|e| format!("encryption_failed: {}", e))?;
 
     storage::save_to_file(&app, PASSWORD_FILE, &encrypted).await?;
 
@@ -45,14 +45,14 @@ pub async fn load_passwords(
     }
 
     let decrypted = crypto::decrypt_data(&encrypted, &master_password)
-        .map_err(|e| format!("解密失败: {}", e))?;
+        .map_err(|e| format!("decryption_failed: {}", e))?;
 
     if decrypted.trim().is_empty() {
         return Ok(Vec::new());
     }
 
     let parsed: Value = serde_json::from_str(&decrypted)
-        .map_err(|e| format!("反序列化失败: {}", e))?;
+        .map_err(|e| format!("deserialization_failed: {}", e))?;
 
     let mut passwords = match parsed {
         Value::Array(arr) => arr,
@@ -111,7 +111,7 @@ pub async fn update_password(
 
     let mut list = load_passwords(master_password.clone(), app.clone(), state.clone()).await?;
     let Some(index) = find_entry_index(&list, &id) else {
-        return Err("记录不存在".to_string());
+        return Err("entry_not_found".to_string());
     };
 
     let existing = list.get(index).cloned().unwrap_or_default();
@@ -136,7 +136,7 @@ pub async fn delete_password(
 
     let mut list = load_passwords(master_password.clone(), app.clone(), state.clone()).await?;
     let Some(index) = find_entry_index(&list, &id) else {
-        return Err("记录不存在".to_string());
+        return Err("entry_not_found".to_string());
     };
 
     list.remove(index);
@@ -237,12 +237,12 @@ pub async fn prepare_cimbar_payload(
 
     let all_passwords = load_passwords(master_password.clone(), app, state).await?;
     if all_passwords.is_empty() {
-        return Err("暂无可分享的密码".to_string());
+        return Err("no_passwords_available_to_share".to_string());
     }
 
     let filtered = if let Some(ids) = selected_ids {
         if ids.is_empty() {
-            return Err("未选择任何密码记录".to_string());
+            return Err("no_entries_selected".to_string());
         }
 
         let id_set: HashSet<String> = ids.into_iter().collect();
@@ -262,7 +262,7 @@ pub async fn prepare_cimbar_payload(
     };
 
     if filtered.is_empty() {
-        return Err("未选择任何密码记录".to_string());
+        return Err("no_entries_selected".to_string());
     }
 
     let payload = json!({
@@ -273,7 +273,7 @@ pub async fn prepare_cimbar_payload(
     });
 
     let serialized = serde_json::to_string(&payload)
-        .map_err(|e| format!("序列化失败: {}", e))?;
+        .map_err(|e| format!("serialization_failed: {}", e))?;
 
     let trimmed_share = share_password.as_ref().map(|s| s.trim().to_string()).unwrap_or_default();
     let share_enabled = !trimmed_share.is_empty();
@@ -285,7 +285,7 @@ pub async fn prepare_cimbar_payload(
     };
 
     let encrypted = crypto::encrypt_data(&serialized, &encryption_key)
-        .map_err(|e| format!("加密失败: {}", e))?;
+        .map_err(|e| format!("encryption_failed: {}", e))?;
 
     Ok(json!({
         "success": true,
@@ -305,7 +305,7 @@ pub async fn get_encrypted_vault(
     ensure_authenticated(&state)?;
     let encrypted = storage::load_from_file(&app, PASSWORD_FILE).await?;
     if encrypted.trim().is_empty() {
-        return Err("暂无可用密码数据".to_string());
+        return Err("no_vault_data_available".to_string());
     }
 
     Ok(json!({
@@ -343,10 +343,33 @@ pub async fn move_passwords_to_group(
     save_passwords(list, master_password, app, state).await
 }
 
+pub async fn increment_usage_count(
+    id: String,
+    master_password: String,
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    ensure_authenticated(&state)?;
+
+    let mut list = load_passwords(master_password.clone(), app.clone(), state.clone()).await?;
+    let Some(index) = find_entry_index(&list, &id) else {
+        return Err("entry_not_found".to_string());
+    };
+
+    if let Some(obj) = list[index].as_object_mut() {
+        let count = obj.get("usageCount")
+            .and_then(Value::as_u64)
+            .unwrap_or(0);
+        obj.insert("usageCount".to_string(), Value::Number((count + 1).into()));
+    }
+
+    save_passwords(list, master_password, app, state).await
+}
+
 pub fn ensure_authenticated(state: &State<'_, AppState>) -> Result<(), String> {
     let is_auth = *state.is_authenticated.lock().unwrap();
     if !is_auth {
-        return Err("未认证".to_string());
+        return Err("not_authenticated".to_string());
     }
     Ok(())
 }

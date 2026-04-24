@@ -7,10 +7,12 @@ import {
     QrCodeIcon,
     HeartIcon,
     CogIcon,
-    LockClosedIcon
+    LockClosedIcon,
+    LanguageIcon
 } from '@heroicons/react/24/outline';
 import ConfirmInputModal from './ConfirmInputModal';
 import CustomDialog from './CustomDialog';
+import { useTranslation } from 'react-i18next';
 
 const defaultSettings = {
     autoLock: {
@@ -32,7 +34,12 @@ const defaultSettings = {
         hideSensitiveButtons: true,
         showPasswordStrength: true,
         compactMode: false,
-        theme: 'system'
+        theme: 'system',
+        cardOrder: 'usage',
+        pagination: {
+            enabled: false,
+            pageSize: 20
+        }
     },
     mfa: {
         enabled: false,
@@ -47,6 +54,7 @@ const defaultSettings = {
 };
 
 const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate }) => {
+    const { t, i18n } = useTranslation();
     const [activeSection, setActiveSection] = useState('general');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [dialogConfig, setDialogConfig] = useState({
@@ -55,9 +63,17 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
         message: '',
         detail: '',
         type: 'warning',
-        buttons: ['确定', '取消'],
+        buttons: [t('common.confirm'), t('common.cancel')],
         onConfirm: null
     });
+
+    // Update buttons when language changes
+    useEffect(() => {
+        setDialogConfig(prev => ({
+            ...prev,
+            buttons: prev.buttons.length === 2 ? [t('common.confirm'), t('common.cancel')] : prev.buttons
+        }));
+    }, [t]);
 
     // 设置状态
     const [settings, setSettings] = useState(initialSettings || defaultSettings);
@@ -122,10 +138,11 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
 
     const handleNestedSettingChange = async (category, key, value) => {
         const previous = settings;
+        const categoryState = settings?.[category] || defaultSettings[category];
         const next = {
             ...settings,
             [category]: {
-                ...settings[category],
+                ...categoryState,
                 [key]: value
             }
         };
@@ -133,14 +150,29 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
         await persistSetting(category, next[category], previous);
     };
 
+    const handleResetSettings = async () => {
+        if (confirm(t('settings.danger.resetSettings.confirm'))) {
+            try {
+                const result = await window.api.resetSettings();
+                if (result.success) {
+                    setSettings(result.settings);
+                    onSettingsUpdate?.(result.settings);
+                    alert(t('settings.danger.resetSettings.success'));
+                }
+            } catch (error) {
+                console.error('重置设置失败:', error);
+            }
+        }
+    };
+
     const handleResetPassword = async () => {
         if (resetPasswordData.newPassword !== resetPasswordData.confirmPassword) {
-            alert('新密码和确认密码不匹配');
+            alert(t('settings.password.mismatch'));
             return;
         }
 
         if (resetPasswordData.newPassword.length < 1) {
-            alert('新密码不能为空');
+            alert(t('settings.password.empty'));
             return;
         }
 
@@ -152,7 +184,7 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
             );
 
             if (result.success) {
-                alert('主密码已成功重置');
+                alert(t('settings.password.success'));
                 setResetPasswordData({
                     currentPassword: '',
                     newPassword: '',
@@ -160,11 +192,11 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                     mfaToken: ''
                 });
             } else {
-                alert('重置密码失败: ' + result.message);
+                alert(t('settings.password.failed') + ': ' + result.message);
             }
         } catch (error) {
             console.error('重置密码失败:', error);
-            alert('重置密码过程中发生错误');
+            alert(t('settings.password.error'));
         }
     };
 
@@ -175,21 +207,21 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
     // 处理确认清除密码
     const handleConfirmClearPasswords = async (confirmation) => {
         if (confirmation !== 'DELETE ALL') {
-            alert('确认文本不匹配，操作已取消');
+            alert(t('settings.danger.confirmModal.textMismatch'));
             return;
         }
 
         try {
             const result = await window.api.clearPasswords();
             if (result.success) {
-                alert('所有密码已清除');
+                alert(t('settings.danger.clearPasswords.success'));
                 onLogout(); // 退出登录
             } else {
-                alert('清除密码失败: ' + result.message);
+                alert(t('settings.password.failed') + ': ' + result.message);
             }
         } catch (error) {
             console.error('清除密码失败:', error);
-            alert('清除密码过程中发生错误');
+            alert(t('common.error'));
         }
     };
 
@@ -197,21 +229,21 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
     const handleResetAllData = () => {
         setDialogConfig({
             isOpen: true,
-            title: '危险操作警告',
-            message: '此操作将永久删除所有密码数据和设置',
-            detail: '此操作将：\n• 永久删除所有密码数据\n• 清除所有设置\n• 重置应用状态\n\n此操作无法撤销！\n\n如果您忘记了主密码，这是唯一的解决方案。',
+            title: t('settings.danger.resetAllData.name'),
+            message: t('settings.danger.resetAllData.description'),
+            detail: t('settings.danger.resetAllData.hint'),
             type: 'warning',
-            buttons: ['继续', '取消'],
+            buttons: [t('common.continue'), t('common.cancel')],
             onConfirm: (buttonIndex) => {
                 if (buttonIndex === 0) {
                     // 用户点击了"继续"，显示第二次确认
                     setDialogConfig({
                         isOpen: true,
-                        title: '最后确认',
-                        message: '您确定要重置所有数据吗？',
-                        detail: '这将清除所有密码和设置，无法恢复！\n\n点击"确定重置"继续，点击"取消"中止操作。',
+                        title: t('login.resetConfirmTitle'),
+                        message: t('login.resetConfirmMessage'),
+                        detail: t('login.resetConfirmDetail'),
                         type: 'error',
-                        buttons: ['确定重置', '取消'],
+                        buttons: [t('login.confirmReset'), t('common.cancel')],
                         onConfirm: async (buttonIndex) => {
                             if (buttonIndex === 0) {
                                 // 执行重置
@@ -222,11 +254,11 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                                         // 显示成功对话框
                                         setDialogConfig({
                                             isOpen: true,
-                                            title: '重置完成',
-                                            message: '所有数据已重置！',
-                                            detail: '应用将重新启动，请重新设置主密码。',
+                                            title: t('login.resetSuccessTitle'),
+                                            message: t('login.resetSuccessMessage'),
+                                            detail: t('login.resetSuccessDetail'),
                                             type: 'success',
-                                            buttons: ['确定'],
+                                            buttons: [t('common.confirm')],
                                             onConfirm: () => {
                                                 setDialogConfig(prev => ({ ...prev, isOpen: false }));
                                                 // 重新加载页面，让用户重新设置
@@ -236,11 +268,11 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                                     } else {
                                         setDialogConfig({
                                             isOpen: true,
-                                            title: '重置失败',
-                                            message: '重置数据失败',
+                                            title: t('login.resetFailedTitle'),
+                                            message: t('login.resetFailedMessage'),
                                             detail: result.message,
                                             type: 'error',
-                                            buttons: ['确定'],
+                                            buttons: [t('common.confirm')],
                                             onConfirm: () => setDialogConfig(prev => ({ ...prev, isOpen: false }))
                                         });
                                     }
@@ -248,11 +280,11 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                                     console.error('重置数据失败:', error);
                                     setDialogConfig({
                                         isOpen: true,
-                                        title: '错误',
-                                        message: '重置数据过程中发生错误',
+                                        title: t('common.error'),
+                                        message: t('login.resetError'),
                                         detail: error.message,
                                         type: 'error',
-                                        buttons: ['确定'],
+                                        buttons: [t('common.confirm')],
                                         onConfirm: () => setDialogConfig(prev => ({ ...prev, isOpen: false }))
                                     });
                                 }
@@ -275,15 +307,34 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
             <div className="bg-white rounded-2xl shadow-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <CogIcon className="w-5 h-5" />
-                    基本设置
+                    {t('settings.sections.general')}
                 </h3>
 
                 <div className="space-y-4">
+                    {/* 语言选择 */}
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <LanguageIcon className="w-4 h-4 text-gray-500" />
+                                <h4 className="font-medium text-gray-900">{t('settings.language')}</h4>
+                            </div>
+                            <p className="text-sm text-gray-500">{t('settings.languageDescription')}</p>
+                        </div>
+                        <select
+                            value={i18n.language}
+                            onChange={(e) => i18n.changeLanguage(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white cursor-pointer"
+                        >
+                            <option value="zh-CN">简体中文</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+
                     {/* 隐藏敏感按钮 */}
                     <div className="flex items-center justify-between py-3 border-b border-gray-100">
                         <div>
-                            <h4 className="font-medium text-gray-900">隐藏敏感按钮</h4>
-                            <p className="text-sm text-gray-500">隐藏删除和清空等危险操作按钮</p>
+                            <h4 className="font-medium text-gray-900">{t('settings.general.hideSensitiveButtons.name')}</h4>
+                            <p className="text-sm text-gray-500">{t('settings.general.hideSensitiveButtons.description')}</p>
                         </div>
                         <button
                             onClick={() => handleNestedSettingChange('ui', 'hideSensitiveButtons', !settings.ui.hideSensitiveButtons)}
@@ -298,8 +349,8 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                     {/* 显示密码强度 */}
                     <div className="flex items-center justify-between py-3 border-b border-gray-100">
                         <div>
-                            <h4 className="font-medium text-gray-900">显示密码强度</h4>
-                            <p className="text-sm text-gray-500">在密码输入时显示强度指示器</p>
+                            <h4 className="font-medium text-gray-900">{t('settings.general.showPasswordStrength.name')}</h4>
+                            <p className="text-sm text-gray-500">{t('settings.general.showPasswordStrength.description')}</p>
                         </div>
                         <button
                             onClick={() => handleNestedSettingChange('ui', 'showPasswordStrength', !settings.ui.showPasswordStrength)}
@@ -314,8 +365,8 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                     {/* 自动锁定 */}
                     <div className="flex items-center justify-between py-3 border-b border-gray-100">
                         <div>
-                            <h4 className="font-medium text-gray-900">自动锁定</h4>
-                            <p className="text-sm text-gray-500">空闲一段时间后自动锁定应用</p>
+                            <h4 className="font-medium text-gray-900">{t('settings.general.autoLock.name')}</h4>
+                            <p className="text-sm text-gray-500">{t('settings.general.autoLock.description')}</p>
                         </div>
                         <button
                             onClick={() => {
@@ -336,10 +387,10 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
 
                     {/* 自动锁定超时 */}
                     {settings.autoLock.enabled && (
-                        <div className="flex items-center justify-between py-3">
+                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
                             <div>
-                                <h4 className="font-medium text-gray-900">锁定超时时间</h4>
-                                <p className="text-sm text-gray-500">设置空闲多少分钟后自动锁定</p>
+                                <h4 className="font-medium text-gray-900">{t('settings.general.autoLockTimeout.name')}</h4>
+                                <p className="text-sm text-gray-500">{t('settings.general.autoLockTimeout.description')}</p>
                             </div>
                             <select
                                 value={settings.autoLock.timeout === 0 ? 0 : Math.floor(settings.autoLock.timeout / 60000)} // 转换为分钟，0表示永不
@@ -352,22 +403,86 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                                         handleNestedSettingChange('autoLock', 'timeout', timeoutMinutes * 60000);
                                     }
                                 }}
-                                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white cursor-pointer"
                             >
-                                <option value={1}>1 分钟</option>
-                                <option value={5}>5 分钟</option>
-                                <option value={15}>15 分钟</option>
-                                <option value={30}>30 分钟</option>
-                                <option value={60}>1 小时</option>
-                                <option value={0}>永不</option>
+                                <option value={1}>{t('settings.general.autoLockTimeout.1min')}</option>
+                                <option value={5}>{t('settings.general.autoLockTimeout.5min')}</option>
+                                <option value={15}>15 {t('settings.general.autoLockTimeout.1min').replace('1', '').trim()}</option>
+                                <option value={30}>30 {t('settings.general.autoLockTimeout.1min').replace('1', '').trim()}</option>
+                                <option value={60}>{t('settings.general.autoLockTimeout.1hour')}</option>
+                                <option value={0}>{t('settings.general.autoLockTimeout.never')}</option>
                             </select>
                         </div>
                     )}
+
+                    {/* 卡片排序模式 */}
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                        <div>
+                            <h4 className="font-medium text-gray-900">{t('settings.general.cardOrder.name')}</h4>
+                            <p className="text-sm text-gray-500">{t('settings.general.cardOrder.description')}</p>
+                        </div>
+                        <select
+                            value={settings.ui.cardOrder || 'usage'}
+                            onChange={(e) => handleNestedSettingChange('ui', 'cardOrder', e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white cursor-pointer"
+                        >
+                            <option value="usage">{t('settings.general.cardOrder.usage')}</option>
+                            <option value="createdAt">{t('settings.general.cardOrder.createdAt')}</option>
+                            <option value="updatedAt">{t('settings.general.cardOrder.updatedAt')}</option>
+                            <option value="username">{t('settings.general.cardOrder.username')}</option>
+                        </select>
+                    </div>
+
+                    {/* 启用分页 */}
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                        <div>
+                            <h4 className="font-medium text-gray-900">{t('settings.general.pagination.enable.name')}</h4>
+                            <p className="text-sm text-gray-500">{t('settings.general.pagination.enable.description')}</p>
+                        </div>
+                        <button
+                            onClick={() => handleNestedSettingChange('ui', 'pagination', {
+                                ...(settings.ui.pagination || { enabled: false, pageSize: 20 }),
+                                enabled: !settings.ui.pagination?.enabled
+                            })}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${settings.ui.pagination?.enabled ? 'bg-blue-600' : 'bg-gray-200'}`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.ui.pagination?.enabled ? 'translate-x-6' : 'translate-x-0.5'}`}
+                            />
+                        </button>
+                    </div>
+
+                    {/* 每页显示数量 */}
+                    {settings.ui.pagination?.enabled && (
+                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                            <div>
+                                <h4 className="font-medium text-gray-900">{t('settings.general.pagination.pageSize.name')}</h4>
+                                <p className="text-sm text-gray-500">{t('settings.general.pagination.pageSize.description')}</p>
+                            </div>
+                            <input
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={settings.ui.pagination?.pageSize || 20}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (!isNaN(val)) {
+                                        handleNestedSettingChange('ui', 'pagination', {
+                                            ...(settings.ui.pagination || { enabled: false, pageSize: 20 }),
+                                            pageSize: val
+                                        });
+                                    }
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-20 text-sm"
+                            />
+                        </div>
+                    )}
+
                     {/* 默认生成密码长度 */}
                     <div className="flex items-center justify-between py-3 border-b border-gray-100">
                         <div>
-                            <h4 className="font-medium text-gray-900">默认生成密码长度</h4>
-                            <p className="text-sm text-gray-500">设置默认生成密码的长度</p>
+                            <h4 className="font-medium text-gray-900">{t('settings.general.defaultLength.name')}</h4>
+                            <p className="text-sm text-gray-500">{t('settings.general.defaultLength.description')}</p>
                         </div>
                         <div>
                             <input
@@ -382,11 +497,11 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                     </div>
                     {/* 密码生成器选项 */}
                     <div className="space-y-3">
-                        <h4 className="font-medium text-gray-900">密码生成器选项</h4>
+                        <h4 className="font-medium text-gray-900">{t('settings.general.generatorOptions.title')}</h4>
 
                         {/* 包含大写字母 */}
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">包含大写字母 (A-Z)</span>
+                            <span className="text-sm text-gray-600">{t('settings.general.generatorOptions.uppercase')}</span>
                             <button
                                 onClick={() => handleNestedSettingChange('passwordGenerator', 'includeUppercase', !settings.passwordGenerator.includeUppercase)}
                                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${settings.passwordGenerator.includeUppercase ? 'bg-blue-600' : 'bg-gray-200'}`}
@@ -399,7 +514,7 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
 
                         {/* 包含小写字母 */}
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">包含小写字母 (a-z)</span>
+                            <span className="text-sm text-gray-600">{t('settings.general.generatorOptions.lowercase')}</span>
                             <button
                                 onClick={() => handleNestedSettingChange('passwordGenerator', 'includeLowercase', !settings.passwordGenerator.includeLowercase)}
                                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${settings.passwordGenerator.includeLowercase ? 'bg-blue-600' : 'bg-gray-200'}`}
@@ -412,7 +527,7 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
 
                         {/* 包含数字 */}
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">包含数字 (0-9)</span>
+                            <span className="text-sm text-gray-600">{t('settings.general.generatorOptions.numbers')}</span>
                             <button
                                 onClick={() => handleNestedSettingChange('passwordGenerator', 'includeNumbers', !settings.passwordGenerator.includeNumbers)}
                                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${settings.passwordGenerator.includeNumbers ? 'bg-blue-600' : 'bg-gray-200'}`}
@@ -425,7 +540,7 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
 
                         {/* 包含符号 */}
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">包含符号 (!@#$%^&*)</span>
+                            <span className="text-sm text-gray-600">{t('settings.general.generatorOptions.symbols')}</span>
                             <button
                                 onClick={() => handleNestedSettingChange('passwordGenerator', 'includeSymbols', !settings.passwordGenerator.includeSymbols)}
                                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${settings.passwordGenerator.includeSymbols ? 'bg-blue-600' : 'bg-gray-200'}`}
@@ -438,7 +553,7 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
 
                         {/* 排除相似字符 */}
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">排除相似字符 (0O1lI)</span>
+                            <span className="text-sm text-gray-600">{t('settings.general.generatorOptions.similar')}</span>
                             <button
                                 onClick={() => handleNestedSettingChange('passwordGenerator', 'excludeSimilar', !settings.passwordGenerator.excludeSimilar)}
                                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${settings.passwordGenerator.excludeSimilar ? 'bg-blue-600' : 'bg-gray-200'}`}
@@ -451,10 +566,10 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
 
                         {/* 自定义字符集 */}
                         <div className="space-y-2">
-                            <span className="text-sm text-gray-600">自定义字符集</span>
+                            <span className="text-sm text-gray-600">{t('settings.general.generatorOptions.custom')}</span>
                             <input
                                 type="text"
-                                placeholder="留空使用默认字符集"
+                                placeholder={t('settings.general.generatorOptions.customPlaceholder')}
                                 value={settings.passwordGenerator.customCharset}
                                 onChange={(e) => handleNestedSettingChange('passwordGenerator', 'customCharset', e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm placeholder:text-gray-400 placeholder:opacity-100"
@@ -470,40 +585,40 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
         <div className="bg-white rounded-2xl shadow-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
                 <KeyIcon className="w-5 h-5" />
-                重置主密码
+                {t('settings.sections.password')}
             </h3>
 
             <div className="space-y-4 max-w-md">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">当前密码</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings.password.current')}</label>
                     <input
                         type="password"
                         value={resetPasswordData.currentPassword}
                         onChange={(e) => setResetPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 placeholder:opacity-100"
-                        placeholder="输入当前密码"
+                        placeholder={t('settings.password.currentPlaceholder')}
                     />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">新密码</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings.password.new')}</label>
                     <input
                         type="password"
                         value={resetPasswordData.newPassword}
                         onChange={(e) => setResetPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 placeholder:opacity-100"
-                        placeholder="输入新密码"
+                        placeholder={t('settings.password.newPlaceholder')}
                     />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">确认新密码</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings.password.confirm')}</label>
                     <input
                         type="password"
                         value={resetPasswordData.confirmPassword}
                         onChange={(e) => setResetPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 placeholder:opacity-100"
-                        placeholder="再次输入新密码"
+                        placeholder={t('settings.password.confirmPlaceholder')}
                     />
                 </div>
 
@@ -511,75 +626,8 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                     onClick={handleResetPassword}
                     className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                    重置密码
+                    {t('settings.password.resetButton')}
                 </button>
-            </div>
-        </div>
-    );
-
-    const renderDonationSettings = () => (
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                <HeartIcon className="w-6 h-6 text-red-500" />
-                项目详情 & 支持
-            </h3>
-
-            <div className="space-y-6">
-                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 text-center">
-                    <h4 className="font-semibold text-gray-900 mb-3 text-xl">Ciphora 密码管理器</h4>
-                    <p className="text-gray-600 mb-4">
-                        一个安全、开源的密码管理器，支持多种数据类型和加密备份
-                    </p>
-                    <div className="text-sm text-gray-500">
-                        <a
-                            href="https://github.com/loganchef/Ciphora"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:text-blue-800 underline"
-                        >
-                            https://github.com/loganchef/Ciphora
-                        </a> 版本: v1.3.0 | 开源协议: MIT
-                    </div>
-                </div>
-
-                <div className="border-t border-gray-100 pt-4">
-                    <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                                <HeartIcon className="w-4 h-4 text-pink-500" />
-                                <span className="text-sm font-medium text-gray-900">支持项目</span>
-                            </div>
-                            <div className="flex gap-2 text-xs">
-                                <span className="bg-white px-2 py-1 rounded text-pink-600">🌸一朵花¥1</span>
-                                <span className="bg-white px-2 py-1 rounded text-yellow-600">🍋柠檬水¥5</span>
-                                <span className="bg-white px-2 py-1 rounded text-amber-600">🧋奶茶¥12</span>
-                                <span className="bg-white px-2 py-1 rounded text-orange-600">🍽️午饭¥25</span>
-                                <span className="bg-white px-2 py-1 rounded text-red-600">自定义¥?</span>
-                            </div>
-                        </div>
-                        <div className="flex justify-center gap-16 mb-2">
-                            <div className="w-32 h-40 bg-green-500 rounded border border-gray-200 flex items-center justify-center">
-                                <img src="./res/wechatpay.png" alt="微信" className="w-full h-full object-contain" onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display = 'flex';
-                                }} />
-                                <div className="hidden w-full h-full items-center justify-center text-white text-sm font-bold">
-                                    微信支付
-                                </div>
-                            </div>
-                            <div className="w-32 h-40 bg-blue-500 rounded border border-gray-200 flex items-center justify-center">
-                                <img src="./res/alipay.png" alt="支付宝" className="w-full h-full object-contain" onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display = 'flex';
-                                }} />
-                                <div className="hidden w-full h-full items-center justify-center text-white text-sm font-bold">
-                                    支付宝
-                                </div>
-                            </div>
-                        </div>
-                        <p className="text-xs text-gray-600 text-center">如果对您有帮助，欢迎支持开发</p>
-                    </div>
-                </div>
             </div>
         </div>
     );
@@ -590,57 +638,71 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                 <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <ExclamationTriangleIcon className="w-10 h-10 text-red-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">危险操作</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('settings.danger.title')}</h3>
                 <p className="text-gray-600">
-                    以下操作具有破坏性，请谨慎操作
+                    {t('settings.danger.description')}
                 </p>
             </div>
 
             <div className="space-y-4 max-w-md mx-auto">
                 <div className="border border-red-200 rounded-lg p-4 bg-red-50">
-                    <h4 className="font-medium text-red-900 mb-2">清除所有密码</h4>
+                    <h4 className="font-medium text-red-900 mb-2">{t('settings.danger.clearPasswords.name')}</h4>
                     <p className="text-sm text-red-700 mb-3">
-                        此操作将永久删除所有密码数据，无法恢复！
+                        {t('settings.danger.clearPasswords.description')}
                     </p>
                     <button
                         onClick={handleClearAllPasswords}
                         className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                     >
                         <TrashIcon className="w-4 h-4" />
-                        清除所有密码
+                        {t('settings.danger.clearPasswords.name')}
                     </button>
                 </div>
 
                 <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
-                    <h4 className="font-medium text-orange-900 mb-2">重置应用</h4>
+                    <h4 className="font-medium text-orange-900 mb-2">{t('settings.danger.resetApp.name')}</h4>
                     <p className="text-sm text-orange-700 mb-3">
-                        清除所有设置并恢复到初始状态
+                        {t('settings.danger.resetApp.description')}
                     </p>
                     <button
                         onClick={() => {
-                            if (confirm('确定要重置应用吗？这将清除所有设置。')) {
+                            if (confirm(t('settings.danger.resetApp.confirm'))) {
                                 localStorage.removeItem('ciphora_setup');
                                 window.location.reload();
                             }
                         }}
                         className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
                     >
-                        重置应用
+                        {t('settings.danger.resetApp.name')}
+                    </button>
+                </div>
+
+                <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+                    <h4 className="font-medium text-orange-900 mb-2">{t('settings.danger.resetSettings.name')}</h4>
+                    <p className="text-sm text-orange-700 mb-3">
+                        {t('settings.danger.resetSettings.description')}
+                    </p>
+                    <button
+                        onClick={handleResetSettings}
+                        className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                        <CogIcon className="w-4 h-4" />
+                        {t('settings.danger.resetSettings.name')}
                     </button>
                 </div>
 
                 <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
-                    <h4 className="font-medium text-purple-900 mb-2">重置所有数据</h4>
+                    <h4 className="font-medium text-purple-900 mb-2">{t('settings.danger.resetAllData.name')}</h4>
                     <p className="text-sm text-purple-700 mb-3">
-                        <strong>忘记主密码时的解决方案</strong><br />
-                        清除所有密码数据和设置，重新开始使用应用
+                        <strong>{t('settings.danger.resetAllData.hint')}</strong><br />
+                        {t('settings.danger.resetAllData.description')}
                     </p>
                     <button
                         onClick={handleResetAllData}
                         className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
                     >
                         <ExclamationTriangleIcon className="w-4 h-4" />
-                        重置所有数据
+                        {t('settings.danger.resetAllData.name')}
                     </button>
                 </div>
             </div>
@@ -653,8 +715,6 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                 return renderGeneralSettings();
             case 'password':
                 return renderPasswordSettings();
-            case 'donation':
-                return renderDonationSettings();
             case 'danger':
                 // 如果隐藏敏感按钮，重定向到基本设置
                 if (settings?.ui?.hideSensitiveButtons) {
@@ -667,13 +727,13 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
     };
 
     return (
-        <div className="h-screen mx-24 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-8 overflow-hidden">
+        <div className="h-screen mx-0 md:mx-24 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 md:p-8 overflow-hidden safe-area-bottom">
             <div className="max-w-6xl mx-auto h-full">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 h-full">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-8 h-full">
                     {/* 左侧设置菜单 */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white rounded-2xl shadow-lg p-6 space-y-2 overflow-hidden">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">设置分类</h3>
+                    <div className="lg:col-span-1 flex flex-col gap-4 overflow-y-auto max-h-[30vh] lg:max-h-full pb-4">
+                        <div className="bg-white rounded-2xl shadow-lg p-6 space-y-2 flex-grow overflow-hidden min-w-fit">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('settings.categoryTitle')}</h3>
 
                             <button
                                 onClick={() => setActiveSection('general')}
@@ -683,7 +743,7 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                                     }`}
                             >
                                 <CogIcon className="w-5 h-5" />
-                                <span>基本设置</span>
+                                <span>{t('settings.sections.general')}</span>
                             </button>
 
                             <button
@@ -694,18 +754,7 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                                     }`}
                             >
                                 <KeyIcon className="w-5 h-5" />
-                                <span>重置主密码</span>
-                            </button>
-
-                            <button
-                                onClick={() => setActiveSection('donation')}
-                                className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-xl transition-all duration-200 ${activeSection === 'donation'
-                                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                    : 'text-gray-700 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <HeartIcon className="w-5 h-5" />
-                                <span>项目详情 & 支持</span>
+                                <span>{t('settings.sections.password')}</span>
                             </button>
 
                             {!settings?.ui?.hideSensitiveButtons && (
@@ -717,14 +766,41 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                                         }`}
                                 >
                                     <ExclamationTriangleIcon className="w-5 h-5" />
-                                    <span>危险区域</span>
+                                    <span>{t('settings.sections.danger')}</span>
                                 </button>
                             )}
+                        </div>
+
+                        {/* 项目链接与赞助 */}
+                        <div className="bg-white rounded-2xl shadow-lg p-4 space-y-2">
+                            <a
+                                href="https://github.com/loganchef/Ciphora"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full flex items-center gap-3 px-4 py-2 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors border border-gray-100 font-medium text-xs"
+                                title={t('settings.donation.projectAddress')}
+                            >
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" /></svg>
+                                <span>{t('settings.donation.projectAddress')}</span>
+                            </a>
+                            <a
+                                href="https://github.com/sponsors/loganchef"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full flex items-center gap-3 px-4 py-2 bg-pink-50 text-pink-600 rounded-xl hover:bg-pink-100 transition-colors border border-pink-100 font-medium text-xs"
+                                title={t('settings.donation.sponsor')}
+                            >
+                                <HeartIcon className="w-4 h-4" />
+                                <span>{t('settings.donation.sponsor')}</span>
+                            </a>
+                            <div className="text-center pt-1 border-t border-gray-50 mt-2">
+                                <p className="text-[10px] text-gray-400 font-medium">Ciphora v2.0.0 | MIT License</p>
+                            </div>
                         </div>
                     </div>
 
                     {/* 右侧设置内容 */}
-                    <div className="lg:col-span-3 overflow-y-auto h-full max-w-7xl pb-24">
+                    <div className="lg:col-span-3 overflow-y-auto h-full max-w-7xl pb-32">
                         {renderContent()}
                     </div>
                 </div>
@@ -735,10 +811,10 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                 isOpen={showConfirmModal}
                 onClose={() => setShowConfirmModal(false)}
                 onConfirm={handleConfirmClearPasswords}
-                title="⚠️ 危险操作警告"
-                message="此操作将永久删除所有密码数据，无法恢复！如果您确定要继续，请在下方输入 'DELETE ALL' 来确认："
-                placeholder="请输入 DELETE ALL"
-                confirmText="确认删除"
+                title={t('settings.danger.confirmModal.title')}
+                message={t('settings.danger.confirmModal.message')}
+                placeholder={t('settings.danger.confirmModal.placeholder')}
+                confirmText={t('settings.danger.confirmModal.confirmButton')}
                 requiredText="DELETE ALL"
             />
 
@@ -757,4 +833,4 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
     );
 };
 
-export default SettingsView; 
+export default SettingsView;

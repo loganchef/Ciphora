@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
 import Icon from './Icon';
+import { useTranslation } from 'react-i18next';
 
 const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
+    const { t } = useTranslation();
     const [selectedFormat, setSelectedFormat] = useState('');
 
     // 根据类型显示不同的格式选项和描述
     const getFormats = () => {
         if (type === 'import') {
             return [
-                { id: 'excel', name: 'Excel文件', description: '从 .xlsx/.xls 文件导入数据', icon: 'Document/file-excel-2-fill' },
-                { id: 'csv', name: 'CSV文件', description: '从 .csv/.txt 文件导入数据', icon: 'Document/file-text-fill' },
-                { id: 'ciphora', name: 'Ciphora备份文件', description: '从 .ciphora 备份文件恢复', icon: 'System/lock-fill' }
+                { id: 'excel', name: t('common.fileTypes.excel'), description: t('modals.importExport.excelImportDesc'), icon: 'Document/file-excel-2-fill' },
+                { id: 'csv', name: t('common.fileTypes.csv'), description: t('modals.importExport.csvImportDesc'), icon: 'Document/file-text-fill' },
+                { id: 'ciphora', name: t('common.fileTypes.ciphora'), description: t('modals.importExport.ciphoraImportDesc'), icon: 'System/lock-fill' }
             ];
         } else {
             return [
-                { id: 'excel', name: 'Excel文件', description: '导出为 .xlsx 格式', icon: 'Document/file-excel-2-fill' },
-                { id: 'csv', name: 'CSV文件', description: '导出为 .csv 格式', icon: 'Document/file-text-fill' },
-                { id: 'ciphora', name: 'Ciphora备份文件', description: '导出为 .ciphora 备份格式', icon: 'System/lock-fill' }
+                { id: 'excel', name: t('common.fileTypes.excel'), description: t('modals.importExport.excelExportDesc'), icon: 'Document/file-excel-2-fill' },
+                { id: 'csv', name: t('common.fileTypes.csv'), description: t('modals.importExport.csvExportDesc'), icon: 'Document/file-text-fill' },
+                { id: 'ciphora', name: t('common.fileTypes.ciphora'), description: t('modals.importExport.ciphoraExportDesc'), icon: 'System/lock-fill' }
             ];
         }
     };
@@ -24,17 +26,11 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
     const formats = getFormats();
 
     const handleConfirm = () => {
-        console.log('确认按钮被点击，选择的格式:', selectedFormat);
-        if (!selectedFormat) {
-            console.log('没有选择格式，操作被阻止');
-            return;
-        }
+        if (!selectedFormat) return;
 
         if (type === 'import') {
-            console.log('开始导入，格式:', selectedFormat);
             onImport(selectedFormat);
         } else {
-            console.log('开始导出，格式:', selectedFormat);
             onExport(selectedFormat);
         }
         onClose();
@@ -45,14 +41,14 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
             let templateType, filters, defaultName;
             if (format === 'excel') {
                 templateType = 'excel';
-                filters = [{ name: 'Excel文件', extensions: ['xlsx'] }];
-                defaultName = 'Ciphora导入模板.xlsx';
+                filters = [{ name: t('common.fileTypes.excel'), extensions: ['xlsx'] }];
+                defaultName = `${t('modals.importExport.templateDefaultName')}.xlsx`;
             } else if (format === 'csv') {
                 templateType = 'csv';
-                filters = [{ name: 'CSV文件', extensions: ['csv'] }];
-                defaultName = 'Ciphora导入模板.csv';
+                filters = [{ name: t('common.fileTypes.csv'), extensions: ['csv'] }];
+                defaultName = `${t('modals.importExport.templateDefaultName')}.csv`;
             } else {
-                alert('该格式不支持模板下载');
+                alert(t('errors.templateNotSupported'));
                 return;
             }
 
@@ -62,7 +58,18 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
                 return; // 用户取消
             }
 
-            const result = await window.api.generateImportTemplate(templateType);
+            const result = await window.api.generateImportTemplate(templateType, {
+                sheetName: t('common.template'),
+                templateDefaultName: t('modals.importExport.templateDefaultName'),
+                labels: {
+                    exampleNotes1: t('modals.importExport.examples.notes1'),
+                    exampleDesc1: t('modals.importExport.examples.desc1'),
+                    exampleNotes2: t('modals.importExport.examples.notes2'),
+                    exampleDesc2: t('modals.importExport.examples.desc2'),
+                    exampleNotes3: t('modals.importExport.examples.notes3'),
+                    exampleDesc3: t('modals.importExport.examples.desc3')
+                }
+            });
             if (result.success) {
                 // 写入文件
                 if (templateType === 'excel') {
@@ -70,13 +77,13 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
                 } else {
                     await window.api.writeTextFile(saveResult.filePath, result.data);
                 }
-                alert(`模板下载成功：${saveResult.filePath}`);
+                alert(t('common.templateDownloadSuccess') + ': ' + saveResult.filePath);
             } else {
-                alert(`模板生成失败：${result.message}`);
+                alert(t('errors.templateGenerateFailed') + ': ' + result.message);
             }
         } catch (error) {
             console.error('下载模板失败:', error);
-            alert(`下载模板失败：${error.message}`);
+            alert(t('common.error') + ': ' + error.message);
         }
     };
 
@@ -93,10 +100,10 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
                         </div>
                         <div>
                             <h2 className="text-xl font-semibold text-gray-900">
-                                {type === 'import' ? '导入数据' : '导出数据'}
+                                {type === 'import' ? t('actions.importData') : t('actions.exportData')}
                             </h2>
                             <p className="text-sm text-gray-500 mt-1">
-                                {type === 'import' ? '选择要导入的文件格式' : '选择要导出的文件格式'}
+                                {type === 'import' ? t('modals.importExport.importSubtitle') : t('modals.importExport.exportSubtitle')}
                             </p>
                         </div>
                     </div>
@@ -112,8 +119,8 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
                 <div className="p-6">
                     <p className="text-gray-600 mb-4">
                         {type === 'import'
-                            ? '请选择要导入的文件格式：'
-                            : '请选择要导出的文件格式：'
+                            ? t('modals.importExport.importPrompt')
+                            : t('modals.importExport.exportPrompt')
                         }
                     </p>
 
@@ -122,7 +129,6 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
                             <div
                                 key={format.id}
                                 onClick={() => {
-                                    console.log('选择格式:', format.id);
                                     setSelectedFormat(format.id);
                                 }}
                                 className={`flex items-center p-4 border rounded-lg transition-all cursor-pointer ${selectedFormat === format.id
@@ -158,7 +164,7 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
                                             handleDownloadTemplate(format.id);
                                         }}
                                         className="ml-3 p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                        title="下载模板"
+                                        title={t('actions.downloadTemplate')}
                                     >
                                         <Icon path="System/download-2-line" className="w-5 h-5" />
                                     </button>
@@ -174,7 +180,7 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
                         onClick={onClose}
                         className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                     >
-                        取消
+                        {t('common.cancel')}
                     </button>
                     <button
                         onClick={handleConfirm}
@@ -188,8 +194,8 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
                             <Icon path={type === 'import' ? 'System/download-2-fill' : 'System/upload-2-fill'} className="w-4 h-4" />
                         )}
                         {selectedFormat
-                            ? (type === 'import' ? '开始导入' : '开始导出')
-                            : '请先选择格式'
+                            ? (type === 'import' ? t('actions.startImport') : t('actions.startExport'))
+                            : t('modals.importExport.selectFormatFirst')
                         }
                     </button>
                 </div>

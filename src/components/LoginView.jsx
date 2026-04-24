@@ -1,29 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { EyeIcon, EyeSlashIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import CustomDialog from './CustomDialog';
+import { useTranslation } from 'react-i18next';
 
 const LoginView = ({ onSuccess }) => {
+    const { t } = useTranslation();
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [showForgotPassword, setShowForgotPassword] = useState(false);
     const [dialogConfig, setDialogConfig] = useState({
         isOpen: false,
         title: '',
         message: '',
         detail: '',
         type: 'warning',
-        buttons: ['确定', '取消'],
+        buttons: [t('common.confirm'), t('common.cancel')],
         onConfirm: null
     });
+
+    // Update buttons when language changes
+    useEffect(() => {
+        setDialogConfig(prev => ({
+            ...prev,
+            buttons: prev.buttons.length === 2 ? [t('common.confirm'), t('common.cancel')] : prev.buttons
+        }));
+    }, [t]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
 
         if (password.length === 0) {
-            setError('请输入主密码');
+            setError(t('login.enterPassword'));
             return;
         }
 
@@ -39,12 +48,12 @@ const LoginView = ({ onSuccess }) => {
                 setIsLoading(false);
                 onSuccess();
             } else {
-                setError(result.message || '登录失败');
+                setError(result.message || t('login.loginFailed'));
                 setIsLoading(false);
             }
         } catch (error) {
             console.error('登录失败:', error);
-            setError('登录过程中发生错误');
+            setError(t('login.loginError'));
             setIsLoading(false);
         }
     };
@@ -54,21 +63,21 @@ const LoginView = ({ onSuccess }) => {
 
         setDialogConfig({
             isOpen: true,
-            title: '忘记主密码解决方案',
-            message: '如果您忘记了主密码，可以重置所有数据重新开始',
-            detail: '此操作将：\n• 永久删除所有密码数据\n• 清除所有设置\n• 重置应用状态\n\n此操作无法撤销！\n\n请确认您要继续此操作。',
+            title: t('login.forgotTitle'),
+            message: t('login.forgotMessage'),
+            detail: t('login.forgotDetail'),
             type: 'warning',
-            buttons: ['继续', '取消'],
+            buttons: [t('common.continue'), t('common.cancel')],
             onConfirm: (buttonIndex) => {
                 if (buttonIndex === 0) {
                     // 用户点击了"继续"，显示第二次确认
                     setDialogConfig({
                         isOpen: true,
-                        title: '最后确认',
-                        message: '您确定要重置所有数据吗？',
-                        detail: '这将清除所有密码和设置，无法恢复！\n\n点击"确定重置"继续，点击"取消"中止操作。',
+                        title: t('login.resetConfirmTitle'),
+                        message: t('login.resetConfirmMessage'),
+                        detail: t('login.resetConfirmDetail'),
                         type: 'error',
-                        buttons: ['确定重置', '取消'],
+                        buttons: [t('login.confirmReset'), t('common.cancel')],
                         onConfirm: async (buttonIndex) => {
                             if (buttonIndex === 0) {
                                 // 执行重置
@@ -81,11 +90,11 @@ const LoginView = ({ onSuccess }) => {
                                         // 显示成功对话框
                                         setDialogConfig({
                                             isOpen: true,
-                                            title: '重置完成',
-                                            message: '所有数据已重置！',
-                                            detail: '应用将重新启动，请重新设置主密码。',
+                                            title: t('login.resetSuccessTitle'),
+                                            message: t('login.resetSuccessMessage'),
+                                            detail: t('login.resetSuccessDetail'),
                                             type: 'success',
-                                            buttons: ['确定'],
+                                            buttons: [t('common.confirm')],
                                             onConfirm: () => {
                                                 setDialogConfig(prev => ({ ...prev, isOpen: false }));
                                                 // 重新加载页面，让用户重新设置
@@ -95,11 +104,11 @@ const LoginView = ({ onSuccess }) => {
                                     } else {
                                         setDialogConfig({
                                             isOpen: true,
-                                            title: '重置失败',
-                                            message: '重置数据失败',
+                                            title: t('login.resetFailedTitle'),
+                                            message: t('login.resetFailedMessage'),
                                             detail: result.message,
                                             type: 'error',
-                                            buttons: ['确定'],
+                                            buttons: [t('common.confirm')],
                                             onConfirm: () => setDialogConfig(prev => ({ ...prev, isOpen: false }))
                                         });
                                     }
@@ -107,11 +116,11 @@ const LoginView = ({ onSuccess }) => {
                                     console.error('重置数据失败:', error);
                                     setDialogConfig({
                                         isOpen: true,
-                                        title: '错误',
-                                        message: '重置数据过程中发生错误',
+                                        title: t('common.error'),
+                                        message: t('login.resetError'),
                                         detail: error.message,
                                         type: 'error',
-                                        buttons: ['确定'],
+                                        buttons: [t('common.confirm')],
                                         onConfirm: () => setDialogConfig(prev => ({ ...prev, isOpen: false }))
                                     });
                                 }
@@ -133,13 +142,13 @@ const LoginView = ({ onSuccess }) => {
                 <div className="flex flex-1 flex-col justify-center px-4 py-10 lg:px-6">
                     <div className="sm:mx-auto sm:w-full sm:max-w-sm">
                         <h2 className="text-center text-xl font-semibold text-gray-900 mb-6">
-                            欢迎回来
+                            {t('login.welcomeBack')}
                         </h2>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label htmlFor="loginPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                                    主密码
+                                    {t('setup.masterPassword')}
                                 </label>
                                 <div className="relative">
                                     <input
@@ -148,7 +157,7 @@ const LoginView = ({ onSuccess }) => {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all duration-200"
-                                        placeholder="输入您的主密码"
+                                        placeholder={t('setup.masterPasswordPlaceholder')}
                                         autoFocus
                                         required
                                     />
@@ -180,17 +189,17 @@ const LoginView = ({ onSuccess }) => {
                                 {isLoading ? (
                                     <div className="flex items-center justify-center gap-2">
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        <span>验证中...</span>
+                                        <span>{t('login.verifying')}</span>
                                     </div>
                                 ) : (
-                                    <span>解锁保险库</span>
+                                    <span>{t('login.unlockVault')}</span>
                                 )}
                             </button>
                         </form>
 
                         <div className="mt-6 text-center">
                             <p className="text-xs text-gray-500">
-                                离线存储 • 端到端加密 • 边缘安全 • 隐私优先
+                                {t('setup.tagline')}
                             </p>
                             <div className="mt-2">
                                 <button
@@ -202,9 +211,9 @@ const LoginView = ({ onSuccess }) => {
                                         handleForgotPassword();
                                     }}
                                     className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:underline cursor-pointer"
-                                    title="忘记主密码？"
+                                    title={t('login.forgotPasswordHint')}
                                 >
-                                    遇到问题？
+                                    {t('login.havingTrouble')}
                                 </button>
                             </div>
                         </div>

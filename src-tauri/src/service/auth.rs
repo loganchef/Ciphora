@@ -14,7 +14,7 @@ pub async fn setup_master_password(
     state: State<'_, AppState>,
 ) -> Result<SetupResponse, String> {
     let hash = crypto::hash_password(&password)
-        .map_err(|e| format!("加密失败: {}", e))?;
+        .map_err(|e| format!("encryption_failed: {}", e))?;
 
     state_dao::save_master_hash(app, &hash).await?;
     *state.master_password_hash.lock().unwrap() = Some(hash.clone());
@@ -22,7 +22,7 @@ pub async fn setup_master_password(
 
     Ok(SetupResponse {
         success: true,
-        message: "主密码设置成功".to_string(),
+        message: "setup_success".to_string(),
     })
 }
 
@@ -37,7 +37,7 @@ pub async fn verify_master_password(
 
     if let Some(hash) = stored_hash.as_ref() {
         let is_valid = crypto::verify_password(&password, hash)
-            .map_err(|e| format!("验证失败: {}", e))?;
+            .map_err(|e| format!("verification_failed: {}", e))?;
 
         if is_valid {
             *state.is_authenticated.lock().unwrap() = true;
@@ -45,7 +45,7 @@ pub async fn verify_master_password(
 
         Ok(is_valid)
     } else {
-        Err("未设置主密码".to_string())
+        Err("master_password_not_set".to_string())
     }
 }
 

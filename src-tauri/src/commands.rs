@@ -353,6 +353,12 @@ pub async fn get_app_info() -> Result<serde_json::Value, String> {
     }))
 }
 
+/// 用途: 获取系统语言; 输入: AppHandle; 输出: String; 必要性: 前端同步语言。
+#[tauri::command]
+pub async fn get_system_locale() -> Result<String, String> {
+    Ok(tauri_plugin_os::locale().unwrap_or_else(|| "en-US".to_string()))
+}
+
 // ==================== 分组相关 ====================
 
 /// 用途: 获取所有分组; 输入: AppHandle; 输出: 分组列表; 必要性: 前端展示分组。
@@ -407,6 +413,16 @@ pub async fn move_passwords_to_group(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     password_service::move_passwords_to_group(password_ids, group_id, master_password, app, state).await
+}
+
+#[tauri::command]
+pub async fn increment_usage_count(
+    id: String,
+    master_password: String,
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    password_service::increment_usage_count(id, master_password, app, state).await
 }
 
 

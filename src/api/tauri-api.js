@@ -324,18 +324,19 @@ export const tauriAPI = {
     return ['json', 'csv', 'excel', 'ciphora'];
   },
 
-  async generateImportTemplate(templateType) {
+  async generateImportTemplate(templateType, options = {}) {
     try {
-      const templateData = createTemplateData();
+      const { sheetName = 'Template', templateDefaultName = 'Ciphora_Template', labels = {} } = options;
+      const templateData = createTemplateData(labels);
       if (templateType === 'excel') {
         const workbook = XLSX.utils.book_new();
         const worksheet = XLSX.utils.json_to_sheet(templateData);
-        XLSX.utils.book_append_sheet(workbook, worksheet, '模板');
+        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
         const buffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
         return {
           success: true,
           data: buffer,
-          filename: 'Ciphora导入模板.xlsx',
+          filename: `${templateDefaultName}.xlsx`,
           mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         };
       }
@@ -346,15 +347,15 @@ export const tauriAPI = {
         return {
           success: true,
           data: '\uFEFF' + csv,
-          filename: 'Ciphora导入模板.csv',
+          filename: `${templateDefaultName}.csv`,
           mimeType: 'text/csv;charset=utf-8'
         };
       }
 
-      return { success: false, message: '不支持的模板类型' };
+      return { success: false, message: 'Unsupported template type' };
     } catch (error) {
-      console.error('生成模板失败:', error);
-      return { success: false, message: error.message || '生成模板失败' };
+      console.error('Failed to generate template:', error);
+      return { success: false, message: error.message || 'Failed to generate template' };
     }
   },
 
@@ -606,6 +607,17 @@ export const tauriAPI = {
     }
   },
 
+  async incrementUsageCount(id) {
+    try {
+      const masterPassword = getMasterPassword();
+      await invoke('increment_usage_count', { id, masterPassword });
+      return { success: true };
+    } catch (error) {
+      console.error('增加使用计数失败:', error);
+      return { success: false, message: error.message };
+    }
+  },
+
   async resetAllData(confirmText) {
     if (confirmText !== 'RESET ALL DATA') {
       return { success: false, message: '确认文本不匹配' };
@@ -631,6 +643,15 @@ export const tauriAPI = {
 
   async getAppInfo() {
     return await invoke('get_app_info');
+  },
+
+  async getSystemLocale() {
+    try {
+      return await invoke('get_system_locale');
+    } catch (error) {
+      console.error('获取系统语言失败:', error);
+      return navigator.language || 'en-US';
+    }
   },
 
   async getSystemInfo() {
@@ -677,14 +698,14 @@ if (typeof window !== 'undefined') {
   window.electronAPI = tauriAPI;
 }
 
-const createTemplateData = () => ([
+const createTemplateData = (labels = {}) => ([
   {
     id: 'example-id-1',
     website: 'example.com',
     username: 'user@example.com',
     password: 'your_password_here',
-    notes: '示例备注',
-    description: '示例描述',
+    notes: labels.exampleNotes1 || 'Example Note',
+    description: labels.exampleDesc1 || 'Example Description',
     type: 'password',
     groupId: null,
     createdAt: new Date().toISOString(),
@@ -695,8 +716,8 @@ const createTemplateData = () => ([
     website: 'github.com',
     username: 'your_username',
     password: 'your_github_password',
-    notes: 'GitHub账户',
-    description: 'GitHub账户密码',
+    notes: labels.exampleNotes2 || 'GitHub Account',
+    description: labels.exampleDesc2 || 'GitHub Account Password',
     type: 'password',
     groupId: null,
     createdAt: new Date().toISOString(),
@@ -708,8 +729,8 @@ const createTemplateData = () => ([
     username: 'your_email@example.com',
     password: '',
     secret: 'JBSWY3DPEHPK3PXP',
-    notes: 'MFA验证码',
-    description: '两步验证',
+    notes: labels.exampleNotes3 || 'MFA Code',
+    description: labels.exampleDesc3 || 'Two-Factor Authentication',
     type: 'mfa',
     groupId: null,
     createdAt: new Date().toISOString(),

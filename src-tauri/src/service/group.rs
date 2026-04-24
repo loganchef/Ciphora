@@ -14,12 +14,12 @@ pub async fn load_groups(app: &AppHandle) -> Result<Vec<Group>, String> {
     }
 
     serde_json::from_str::<Vec<Group>>(&content)
-        .map_err(|e| format!("解析分组失败: {}", e))
+        .map_err(|e| format!("parse_groups_failed: {}", e))
 }
 
 pub async fn save_groups(app: &AppHandle, groups: &[Group]) -> Result<(), String> {
     let serialized = serde_json::to_string_pretty(groups)
-        .map_err(|e| format!("序列化分组失败: {}", e))?;
+        .map_err(|e| format!("serialize_groups_failed: {}", e))?;
     storage::save_to_file(app, GROUPS_FILE, &serialized).await
 }
 
@@ -41,7 +41,7 @@ pub async fn add_group(app: AppHandle, name: String, color: String, icon: String
 pub async fn update_group(app: AppHandle, id: String, name: String, color: String, icon: String, icon_color: String) -> Result<Group, String> {
     let mut groups = load_groups(&app).await?;
     let pos = groups.iter().position(|g| g.id == id)
-        .ok_or_else(|| "分组不存在".to_string())?;
+        .ok_or_else(|| "group_not_found".to_string())?;
 
     groups[pos].name = name;
     groups[pos].color = color;

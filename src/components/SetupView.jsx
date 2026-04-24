@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 
 const SetupView = ({ onComplete }) => {
+    const { t } = useTranslation();
     const [masterPassword, setMasterPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
@@ -14,12 +16,12 @@ const SetupView = ({ onComplete }) => {
         setError('');
 
         if (masterPassword !== confirmPassword) {
-            setError('两次输入的密码不一致');
+            setError(t('setup.passwordMismatch'));
             return;
         }
 
         if (masterPassword.length < 1) {
-            setError('密码长度不能为空');
+            setError(t('setup.passwordEmpty'));
             return;
         }
 
@@ -35,12 +37,12 @@ const SetupView = ({ onComplete }) => {
                 setIsLoading(false);
                 onComplete();
             } else {
-                setError(result.message || '初始化失败');
+                setError(result.message || t('setup.initFailed'));
                 setIsLoading(false);
             }
         } catch (error) {
             console.error('初始化失败:', error);
-            setError('初始化过程中发生错误');
+            setError(t('setup.initError'));
             setIsLoading(false);
         }
     };
@@ -51,13 +53,13 @@ const SetupView = ({ onComplete }) => {
                 <div className="sm:mx-auto sm:w-full sm:max-w-sm">
 
                     <h2 className="text-center text-xl font-semibold text-gray-900 mb-6">
-                        设置主密码
+                        {t('setup.title')}
                     </h2>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label htmlFor="masterPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                                主密码
+                                {t('setup.masterPassword')}
                             </label>
                             <div className="relative">
                                 <input
@@ -66,7 +68,7 @@ const SetupView = ({ onComplete }) => {
                                     value={masterPassword}
                                     onChange={(e) => setMasterPassword(e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all duration-200"
-                                    placeholder="输入您的主密码"
+                                    placeholder={t('setup.masterPasswordPlaceholder')}
                                     required
                                 />
                                 <button
@@ -85,7 +87,7 @@ const SetupView = ({ onComplete }) => {
 
                         <div>
                             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                                确认密码
+                                {t('setup.confirmPassword')}
                             </label>
                             <div className="relative">
                                 <input
@@ -94,7 +96,7 @@ const SetupView = ({ onComplete }) => {
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all duration-200"
-                                    placeholder="再次输入您的主密码"
+                                    placeholder={t('setup.confirmPasswordPlaceholder')}
                                     required
                                 />
                                 <button
@@ -125,17 +127,17 @@ const SetupView = ({ onComplete }) => {
                             {isLoading ? (
                                 <div className="flex items-center justify-center gap-2">
                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    <span>初始化中...</span>
+                                    <span>{t('setup.initializing')}</span>
                                 </div>
                             ) : (
-                                <span>开始使用</span>
+                                <span>{t('setup.startUsing')}</span>
                             )}
                         </button>
                     </form>
 
                     <div className="mt-6 text-center">
                         <p className="text-xs text-gray-500">
-                            离线存储 • 端到端加密 • 边缘安全 • 隐私优先
+                            {t('setup.tagline')}
                         </p>
                     </div>
                 </div>

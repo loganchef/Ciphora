@@ -16,15 +16,16 @@ import { BentoCard, BentoGrid } from "./ui/bento-grid";
 import ImportExportModal from "./ImportExportModal";
 import SecurityModal from "./SecurityModal";
 import { useMobile } from '../hooks/useMobile';
+import { useTranslation } from 'react-i18next';
 
 // 创建 features 数组的函数
-const createFeatures = (passwordCount) => [
+const createFeatures = (passwordCount, t) => [
     {
         Icon: PlusIcon,
-        name: "添加新密码",
-        description: "快速创建条目，支持网站、MFA、JSON、字符串等多种格式。",
+        name: t('dashboard.addPassword.name'),
+        description: t('dashboard.addPassword.description'),
         href: "#",
-        cta: "立即添加",
+        cta: t('dashboard.addPassword.cta'),
         ctaClassName: "h-8 px-3 text-xs",
         background: (
             <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-600/50 blur-3xl" />
@@ -33,8 +34,8 @@ const createFeatures = (passwordCount) => [
     },
     {
         Icon: HashtagIcon,
-        name: "密码数量",
-        description: "您已经保存了多少密码？",
+        name: t('dashboard.passwordCount.name'),
+        description: t('dashboard.passwordCount.description'),
         href: "#",
         cta: "",
         comment: (
@@ -49,10 +50,10 @@ const createFeatures = (passwordCount) => [
     },
     {
         Icon: ShieldCheckIcon,
-        name: "安全加密",
-        description: "Argon2id 密钥派生 + AES-256-GCM 全程离线加密，本地存储。",
+        name: t('dashboard.security.name'),
+        description: t('dashboard.security.description'),
         href: "#",
-        cta: "查看原理",
+        cta: t('dashboard.security.cta'),
         background: (
             <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-red-500/20 to-orange-600/50 blur-3xl" />
         ),
@@ -60,10 +61,10 @@ const createFeatures = (passwordCount) => [
     },
     {
         Icon: ArrowUpTrayIcon,
-        name: "导出备份",
-        description: "及时导出加密备份，避免数据丢失。",
+        name: t('dashboard.exportBackup.name'),
+        description: t('dashboard.exportBackup.description'),
         href: "#",
-        cta: "创建备份",
+        cta: t('dashboard.exportBackup.cta'),
         ctaClassName: "h-8 px-3 text-xs",
         background: (
             <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-teal-500/20 to-green-600/50 blur-3xl" />
@@ -72,10 +73,10 @@ const createFeatures = (passwordCount) => [
     },
     {
         Icon: ArrowDownTrayIcon,
-        name: "导入数据",
-        description: "支持 CSV/Excel/Ciphora 备份导入。",
+        name: t('dashboard.importData.name'),
+        description: t('dashboard.importData.description'),
         href: "#",
-        cta: "导入数据",
+        cta: t('dashboard.importData.cta'),
         ctaClassName: "h-8 px-3 text-xs",
         background: (
             <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-600/50 blur-3xl" />
@@ -84,10 +85,10 @@ const createFeatures = (passwordCount) => [
     },
     {
         Icon: QrCodeIcon,
-        name: "二维码传输",
-        description: "生成高速传输二维码，或切换到接收模式",
+        name: t('dashboard.cimbar.name'),
+        description: t('dashboard.cimbar.description'),
         href: "#",
-        cta: "开始传输",
+        cta: t('dashboard.cimbar.cta'),
         ctaClassName: "h-10 px-4 text-sm",
         background: (
             <div className="absolute inset-0 flex items-center justify-center opacity-40">
@@ -101,6 +102,7 @@ const createFeatures = (passwordCount) => [
 ];
 
 function Dashboard({ onAddPassword, onSearch, onSettings, onClearData, onImportPasswords, onExportPasswords, onCreateBackup, onRestoreBackup, passwordCount = 0, onShowCimbar }) {
+    const { t } = useTranslation();
     const [showImportModal, setShowImportModal] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
     const [showSecurityModal, setShowSecurityModal] = useState(false);
@@ -132,19 +134,19 @@ function Dashboard({ onAddPassword, onSearch, onSettings, onClearData, onImportP
     };
 
     // 创建动态功能数组
-    const features = createFeatures(passwordCount);
+    const features = createFeatures(passwordCount, t);
 
     // 更新功能数组，添加点击处理
     const featuresWithHandlers = features.map(feature => {
-        if (feature.name === "添加新密码") {
+        if (feature.name === t('dashboard.addPassword.name')) {
             return { ...feature, onClick: onAddPassword };
-        } else if (feature.name === "导入数据") {
+        } else if (feature.name === t('dashboard.importData.name')) {
             return { ...feature, onClick: handleImportClick };
-        } else if (feature.name === "导出备份") {
+        } else if (feature.name === t('dashboard.exportBackup.name')) {
             return { ...feature, onClick: handleExportClick };
-        } else if (feature.name === "安全加密") {
+        } else if (feature.name === t('dashboard.security.name')) {
             return { ...feature, onClick: handleSecurityClick };
-        } else if (feature.name === "二维码传输") {
+        } else if (feature.name === t('dashboard.cimbar.name')) {
             return { ...feature, onClick: onShowCimbar };
         }
         return feature;

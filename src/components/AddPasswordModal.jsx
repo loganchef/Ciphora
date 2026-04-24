@@ -11,15 +11,20 @@ import {
     ChatBubbleLeftRightIcon,
     TagIcon,
     QrCodeIcon,
-    DocumentIcon
+    DocumentIcon,
+    LockClosedIcon,
+    ClockIcon,
+    CodeBracketIcon
 } from '@heroicons/react/24/outline';
 import TOTPDisplay from './TOTPDisplay';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useGroups } from '../hooks/useGroups';
 import jsQR from 'jsqr';
+import { useTranslation } from 'react-i18next';
 
 const AddPasswordModal = ({ onClose, onSave }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         type: 'password',
         website: '',
@@ -163,14 +168,14 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                                 if (mfaInfo.description) handleInputChange('notes', mfaInfo.description);
                                 handleInputChange('secret', mfaInfo.secret);
                             } else {
-                                alert('未检测到有效的 MFA 密钥，请确保二维码包含正确的密钥格式');
+                                alert(t('errors.invalidMfaKey'));
                             }
                         } else {
-                            alert('未检测到有效的二维码，请确保图片中包含清晰的二维码');
+                            alert(t('errors.noQrCodeDetected'));
                         }
                     } catch (error) {
                         console.error('二维码解析失败:', error);
-                        alert('二维码解析失败，请重试或手动输入 MFA 密钥');
+                        alert(t('errors.qrCodeParseFailed'));
                     }
                     return;
                 }
@@ -200,14 +205,14 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                     if (mfaInfo.description) handleInputChange('notes', mfaInfo.description);
                     handleInputChange('secret', mfaInfo.secret);
                 } else {
-                    alert('未检测到有效的 MFA 密钥，请确保二维码包含正确的密钥格式');
+                    alert(t('errors.invalidMfaKey'));
                 }
             } else {
-                alert('未检测到有效的二维码，请选择包含二维码的图片');
+                alert(t('errors.noQrCodeInFile'));
             }
         } catch (error) {
             console.error('文件解析失败:', error);
-            alert('文件解析失败，请重试');
+            alert(t('errors.fileParseFailed'));
         }
 
         // 清空文件输入，允许重复选择同一文件
@@ -225,38 +230,19 @@ const AddPasswordModal = ({ onClose, onSave }) => {
             }
         } catch (error) {
             console.error('二维码解析失败:', error);
-            alert('二维码解析失败，请重试或手动输入 MFA 密钥');
+            alert(t('errors.qrCodeParseFailed'));
         }
     };
 
     // 根据类型获取占位符文字
     const getPlaceholder = (field) => {
-        const placeholders = {
-            website: {
-                password: "比如 qq.com / bilibili user",
-                mfa: "比如 Google Authenticator / Microsoft Authenticator",
-                base64: "比如 证书文件 / 密钥文件",
-                string: "比如 API密钥 / 令牌",
-                json: "比如 配置文件 / 数据文件"
-            },
-            username: {
-                password: "输入用户名或邮箱",
-                base64: "输入文件名称或标识",
-                string: "输入数据标识或名称",
-                json: "输入配置名称或标识"
-            },
-            password: "输入密码",
-            secret: "输入Base32格式的MFA密钥",
-            base64Data: "输入或粘贴Base64编码的数据",
-            stringData: "输入要存储的字符串数据",
-            jsonData: '输入JSON数据，例如: {"key": "value", "number": 123}',
-            notes: "添加任何备注信息"
-        };
-
-        if (field === 'website' || field === 'username') {
-            return placeholders[field][formData.type] || placeholders[field]['password'];
+        if (field === 'website') {
+            return t(`placeholders.website.${formData.type}`);
         }
-        return placeholders[field] || "";
+        if (field === 'username') {
+            return t(`placeholders.username.${formData.type}`);
+        }
+        return t(`placeholders.${field}`) || "";
     };
 
     const handleSubmit = (e) => {
@@ -388,7 +374,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                             <div className="w-8 h-8 bg-gradient-to-br rounded-lg flex items-center justify-center">
                                 <KeyIcon className="w-5 h-5 text-neutral-600" />
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-900">添加新记录</h3>
+                            <h3 className="text-lg font-semibold text-gray-900">{t('vault.addNewRecord')}</h3>
                         </div>
                         <button
                             onClick={onClose}
@@ -404,18 +390,43 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                     <div className="space-y-2">
                         <Label className="flex items-center gap-2">
                             <TagIcon className="w-4 h-4" />
-                            数据类型
+                            {t('fields.dataType')}
                         </Label>
                         <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
                             <SelectTrigger>
-                                <SelectValue placeholder="选择数据类型" />
+                                <SelectValue placeholder={t('fields.selectGroup')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="password">🔐 密码</SelectItem>
-                                <SelectItem value="mfa">⏰ MFA密钥</SelectItem>
-                                <SelectItem value="base64">📄 Base64数据</SelectItem>
-                                <SelectItem value="string">📝 字符串</SelectItem>
-                                <SelectItem value="json">🔧 JSON数据</SelectItem>
+                                <SelectItem value="password">
+                                    <div className="flex items-center gap-2">
+                                        <LockClosedIcon className="w-4 h-4" />
+                                        <span>{t('dataTypes.password')}</span>
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="mfa">
+                                    <div className="flex items-center gap-2">
+                                        <ClockIcon className="w-4 h-4" />
+                                        <span>{t('dataTypes.mfa')}</span>
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="base64">
+                                    <div className="flex items-center gap-2">
+                                        <DocumentIcon className="w-4 h-4" />
+                                        <span>{t('dataTypes.base64')}</span>
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="string">
+                                    <div className="flex items-center gap-2">
+                                        <DocumentTextIcon className="w-4 h-4" />
+                                        <span>{t('dataTypes.string')}</span>
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="json">
+                                    <div className="flex items-center gap-2">
+                                        <CodeBracketIcon className="w-4 h-4" />
+                                        <span>{t('dataTypes.json')}</span>
+                                    </div>
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -424,7 +435,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                     <div className="space-y-2">
                         <Label className="flex items-center gap-2">
                             <GlobeAltIcon className="w-4 h-4" />
-                            网站/应用名称
+                            {t('fields.website')}
                         </Label>
                         <input
                             type="text"
@@ -440,7 +451,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                     <div className="space-y-2">
                         <Label className="flex items-center gap-2">
                             <GlobeAltIcon className="w-4 h-4" />
-                            网址 (可选)
+                            {t('fields.url')}
                         </Label>
                         <input
                             type="text"
@@ -464,7 +475,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                                 }
                             }}
                             className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:border-gray-400 transition-all duration-200"
-                            placeholder="例如: https://www.example.com"
+                            placeholder={t('placeholders.url')}
                         />
                     </div>
 
@@ -473,14 +484,14 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                         <div className="space-y-2">
                             <Label className="flex items-center gap-2">
                                 <GlobeAltIcon className="w-4 h-4" />
-                                登录后缀 (可选)
+                                {t('fields.urlSuffix')}
                             </Label>
                             <input
                                 type="text"
                                 value={formData.urlSuffix}
                                 onChange={(e) => handleInputChange('urlSuffix', e.target.value)}
                                 className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:border-gray-400 transition-all duration-200"
-                                placeholder="例如: /login 或 /auth"
+                                placeholder={t('placeholders.urlSuffix')}
                             />
                         </div>
                     )}
@@ -496,7 +507,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                                 className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                             />
                             <Label htmlFor="showUrl" className="text-sm cursor-pointer">
-                                在卡片上显示网址
+                                {t('fields.showUrl')}
                             </Label>
                         </div>
                     )}
@@ -506,7 +517,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                         <div className="space-y-2">
                             <Label className="flex items-center gap-2">
                                 <UserIcon className="w-4 h-4" />
-                                用户名/标识
+                                {t('fields.username')}
                             </Label>
                             <input
                                 type="text"
@@ -524,7 +535,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                         <div className="space-y-2">
                             <Label className="flex items-center gap-2">
                                 <KeyIcon className="w-4 h-4" />
-                                密码
+                                {t('fields.password')}
                             </Label>
                             <div className="flex gap-2">
                                 <div className="relative flex-1">
@@ -554,7 +565,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                                     className="inline-flex items-center gap-2 px-3 py-2 bg-neutral-700 text-sm font-medium text-white rounded-md hover:bg-green-700 transition-colors duration-200"
                                 >
                                     <SparklesIcon className="w-4 h-4" />
-                                    <span>生成</span>
+                                    <span>{t('actions.generate')}</span>
                                 </button>
                             </div>
 
@@ -562,16 +573,16 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                             {passwordStrength && formData.password && settings?.ui?.showPasswordStrength && (
                                 <div className="mt-2 p-2 bg-gray-50 rounded-md">
                                     <div className="flex items-center justify-between mb-2 gap-2">
-                                        <span className="text-sm font-medium text-gray-700 flex-shrink-0">密码强度</span>
+                                        <span className="text-sm font-medium text-gray-700 flex-shrink-0">{t('fields.passwordStrength')}</span>
                                         <span className={`text-sm font-medium flex-shrink-0 ${passwordStrength.strength === 'weak' ? 'text-red-600' :
                                             passwordStrength.strength === 'medium' ? 'text-yellow-600' :
                                                 passwordStrength.strength === 'strong' ? 'text-green-600' :
                                                     'text-blue-600'
                                             }`}>
-                                            {passwordStrength.strength === 'weak' ? '弱' :
-                                                passwordStrength.strength === 'medium' ? '中等' :
-                                                    passwordStrength.strength === 'strong' ? '强' :
-                                                        '很强'}
+                                            {passwordStrength.strength === 'weak' ? t('common.strengths.weak') :
+                                                passwordStrength.strength === 'medium' ? t('common.strengths.medium') :
+                                                    passwordStrength.strength === 'strong' ? t('common.strengths.strong') :
+                                                        t('common.strengths.veryStrong')}
                                         </span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -589,7 +600,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                                     {passwordStrength.feedback && passwordStrength.feedback.length > 0 && (
                                         <div className="mt-2">
                                             <p className="text-xs text-gray-600">
-                                                建议: {passwordStrength.feedback.join(', ')}
+                                                {t('common.suggestion')}: {passwordStrength.feedback.join(', ')}
                                             </p>
                                         </div>
                                     )}
@@ -603,7 +614,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                         <div className="space-y-2">
                             <Label className="flex items-center gap-2">
                                 <KeyIcon className="w-4 h-4" />
-                                MFA密钥
+                                {t('fields.secret')}
                             </Label>
                             <div className="space-y-3">
                                 {/* MFA 输入框和选择图片按钮 */}
@@ -623,7 +634,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                                         className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-md text-sm font-medium transition-all duration-200 border border-green-200 whitespace-nowrap"
                                     >
                                         <DocumentIcon className="w-4 h-4" />
-                                        选择图片
+                                        {t('actions.uploadImage')}
                                     </button>
                                 </div>
 
@@ -640,10 +651,10 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                                 <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-2">
                                     <div className="flex items-center gap-1 mb-1">
                                         <QrCodeIcon className="w-3 h-3" />
-                                        <span className="font-medium">二维码解析</span>
+                                        <span className="font-medium">{t('common.qrCodeAnalysis')}</span>
                                     </div>
-                                    <p>• 直接粘贴：在输入框中粘贴文字或图片，图片会自动解析</p>
-                                    <p>• 选择图片：从文件中选择包含二维码的图片</p>
+                                    <p>• {t('common.pasteInstructions')}</p>
+                                    <p>• {t('common.selectImageInstructions')}</p>
                                 </div>
                             </div>
 
@@ -652,7 +663,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                                     <TOTPDisplay
                                         secret={formData.secret}
                                         issuer={formData.website || 'Ciphora'}
-                                        accountName="新账户"
+                                        accountName={t('common.newAccount')}
                                     />
                                 </div>
                             )}
@@ -664,7 +675,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                         <div className="space-y-2">
                             <Label className="flex items-center gap-2">
                                 <DocumentTextIcon className="w-4 h-4" />
-                                Base64数据
+                                {t('fields.base64Data')}
                             </Label>
                             <textarea
                                 value={formData.base64Data}
@@ -682,7 +693,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                         <div className="space-y-2">
                             <Label className="flex items-center gap-2">
                                 <DocumentTextIcon className="w-4 h-4" />
-                                字符串数据
+                                {t('fields.stringData')}
                             </Label>
                             <textarea
                                 value={formData.stringData}
@@ -700,7 +711,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                         <div className="space-y-2">
                             <Label className="flex items-center gap-2">
                                 <DocumentTextIcon className="w-4 h-4" />
-                                JSON数据
+                                {t('fields.jsonData')}
                             </Label>
                             <textarea
                                 value={formData.jsonData}
@@ -717,7 +728,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                     <div className="space-y-2">
                         <Label className="flex items-center gap-2">
                             <ChatBubbleLeftRightIcon className="w-4 h-4" />
-                            备注 (可选)
+                            {t('fields.notes')}
                         </Label>
                         <textarea
                             value={formData.notes}
@@ -732,14 +743,14 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                     <div className="space-y-2">
                         <Label className="flex items-center gap-2">
                             <TagIcon className="w-4 h-4" />
-                            分组 (可选)
+                            {t('fields.group')}
                         </Label>
                         <Select
                             value={formData.groupId || 'ungrouped'}
                             onValueChange={(value) => handleInputChange('groupId', value === 'ungrouped' ? null : value)}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="选择分组" />
+                                <SelectValue placeholder={t('fields.selectGroup')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="ungrouped">
@@ -752,7 +763,7 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                                             maskSize: '100% 100%',
                                             WebkitMaskSize: '100% 100%',
                                         }} />
-                                        未分组
+                                        {t('common.ungrouped')}
                                     </span>
                                 </SelectItem>
                                 {groups.map(group => {
@@ -786,13 +797,13 @@ const AddPasswordModal = ({ onClose, onSave }) => {
                             onClick={onClose}
                             className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors duration-200 font-medium"
                         >
-                            取消
+                            {t('common.cancel')}
                         </button>
                         <button
                             type="submit"
                             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium"
                         >
-                            保存记录
+                            {t('actions.saveRecord')}
                         </button>
                     </div>
                 </form>
@@ -801,4 +812,4 @@ const AddPasswordModal = ({ onClose, onSave }) => {
     );
 };
 
-export default AddPasswordModal; 
+export default AddPasswordModal;
