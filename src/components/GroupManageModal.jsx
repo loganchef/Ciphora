@@ -150,8 +150,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
                 <img
                   src={currentIconUrl}
                   alt=""
-                  className="w-6 h-6"
-                  style={{ filter: `drop-shadow(0 0 0 ${formData.color})` }}
+                  className="w-6 h-6 opacity-70"
                   onError={(e) => { e.target.style.opacity = '0.3'; }}
                 />
               </div>
@@ -208,7 +207,7 @@ const GroupManageModal = ({ isOpen, onClose, groups, onAdd, onUpdate, onDelete }
 
               {/* Icon grid */}
               {activeCategory && (
-                <div className="grid grid-cols-8 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                <div className="grid grid-cols-8 gap-1.5 max-h-64 overflow-y-auto pr-1">
                   {activeCategory[2].map((stem) => {
                     const key = `${activeCategory[1]}/${stem}`;
                     const selected = formData.icon === key;
