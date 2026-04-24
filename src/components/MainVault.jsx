@@ -83,27 +83,26 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
                     {/* Search + multi-select toggle + add — fixed width on right */}
                     {!isMobile && (
                         <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="w-56">
+                            <div className="w-96">
                                 <SearchBox value={searchQuery} onChange={setSearchQuery} />
                             </div>
-                            <button
+                            <div
                                 onClick={() => { setSelectionMode(!selectionMode); setSelectedIds([]); }}
-                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                                    selectionMode
-                                        ? 'bg-blue-100 text-blue-700'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
+                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${selectionMode
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
                             >
                                 {selectionMode ? '取消' : '多选'}
-                            </button>
-                            <button
+                            </div>
+                            <div
                                 onClick={onAddPassword}
                                 disabled={isLoading}
                                 className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                             >
                                 <PlusIcon className="w-4 h-4" />
                                 <span>{isLoading ? '加载中...' : '添加'}</span>
-                            </button>
+                            </div>
                         </div>
                     )}
 

@@ -18,9 +18,9 @@ export function useGroups() {
     }
   };
 
-  const addGroup = async (name, color, icon) => {
+  const addGroup = async (name, color, icon, iconColor) => {
     try {
-      const result = await tauriAPI.addGroup(name, color, icon);
+      const result = await tauriAPI.addGroup(name, color, icon, iconColor);
       await loadGroups();
       return result;
     } catch (error) {
@@ -29,9 +29,9 @@ export function useGroups() {
     }
   };
 
-  const updateGroup = async (id, name, color, icon) => {
+  const updateGroup = async (id, name, color, icon, iconColor) => {
     try {
-      const result = await tauriAPI.updateGroup(id, name, color, icon);
+      const result = await tauriAPI.updateGroup(id, name, color, icon, iconColor);
       await loadGroups();
       return result;
     } catch (error) {

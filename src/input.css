@@ -31,6 +31,30 @@ textarea::-ms-input-placeholder {
 }
 
 @layer components {
+  /* 分组标签滚动容器 - 显示滚动条 */
+  .group-tabs-scroll {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #D1D5DB transparent; /* Firefox */
+  }
+
+  .group-tabs-scroll::-webkit-scrollbar {
+    display: block;
+    height: 6px;
+  }
+
+  .group-tabs-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .group-tabs-scroll::-webkit-scrollbar-thumb {
+    background: #D1D5DB;
+    border-radius: 3px;
+  }
+
+  .group-tabs-scroll::-webkit-scrollbar-thumb:hover {
+    background: #9CA3AF;
+  }
+
   .glass {
     @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-lg;
   }

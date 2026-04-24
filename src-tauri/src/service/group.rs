@@ -29,16 +29,16 @@ pub async fn get_groups(app: AppHandle) -> Result<Vec<Group>, String> {
     Ok(groups)
 }
 
-pub async fn add_group(app: AppHandle, name: String, color: String, icon: String) -> Result<Group, String> {
+pub async fn add_group(app: AppHandle, name: String, color: String, icon: String, icon_color: String) -> Result<Group, String> {
     let mut groups = load_groups(&app).await?;
     let order = groups.len() as i32;
-    let group = Group::new(name, color, icon, order);
+    let group = Group::new(name, color, icon, icon_color, order);
     groups.push(group.clone());
     save_groups(&app, &groups).await?;
     Ok(group)
 }
 
-pub async fn update_group(app: AppHandle, id: String, name: String, color: String, icon: String) -> Result<Group, String> {
+pub async fn update_group(app: AppHandle, id: String, name: String, color: String, icon: String, icon_color: String) -> Result<Group, String> {
     let mut groups = load_groups(&app).await?;
     let pos = groups.iter().position(|g| g.id == id)
         .ok_or_else(|| "分组不存在".to_string())?;
@@ -46,6 +46,7 @@ pub async fn update_group(app: AppHandle, id: String, name: String, color: Strin
     groups[pos].name = name;
     groups[pos].color = color;
     groups[pos].icon = icon;
+    groups[pos].icon_color = icon_color;
     groups[pos].updated_at = chrono::Utc::now().to_rfc3339();
 
     let updated = groups[pos].clone();

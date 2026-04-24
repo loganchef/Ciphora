@@ -652,16 +652,35 @@ const EditPasswordModal = ({ password, onClose, onSave }) => {
                                 <SelectValue placeholder="选择分组" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="ungrouped">📂 未分组</SelectItem>
+                                <SelectItem value="ungrouped">
+                                    <span className="flex items-center gap-1.5">
+                                        <div style={{
+                                            width: 16, height: 16, display: 'inline-block', flexShrink: 0,
+                                            backgroundColor: '#6B7280',
+                                            maskImage: `url(/icons/System/folder-open-fill.svg)`,
+                                            WebkitMaskImage: `url(/icons/System/folder-open-fill.svg)`,
+                                            maskSize: '100% 100%',
+                                            WebkitMaskSize: '100% 100%',
+                                        }} />
+                                        未分组
+                                    </span>
+                                </SelectItem>
                                 {groups.map(group => {
                                     const iconUrl = group.icon?.includes('/')
-                                        ? `/icons/${encodeURIComponent(group.icon.split('/')[0])}/${group.icon.split('/')[1]}.svg`
+                                        ? `/icons/${group.icon.split('/')[0].replace(/ /g, '%20')}/${group.icon.split('/')[1]}.svg`
                                         : null;
                                     return (
                                         <SelectItem key={group.id} value={group.id}>
                                             <span className="flex items-center gap-1.5" style={{ color: group.color }}>
                                                 {iconUrl
-                                                    ? <img src={iconUrl} alt="" className="w-4 h-4" style={{ display: 'inline' }} />
+                                                    ? <div style={{
+                                                        width: 16, height: 16, display: 'inline-block', flexShrink: 0,
+                                                        backgroundColor: group.iconColor || group.color,
+                                                        maskImage: `url(${iconUrl})`, WebkitMaskImage: `url(${iconUrl})`,
+                                                        maskSize: '100% 100%', WebkitMaskSize: '100% 100%',
+                                                         
+                                                         
+                                                    }} />
                                                     : group.icon}
                                                 {group.name}
                                             </span>

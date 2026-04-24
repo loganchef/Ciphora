@@ -361,15 +361,15 @@ pub async fn get_groups(app: tauri::AppHandle) -> Result<Vec<Group>, String> {
     group_service::get_groups(app).await
 }
 
-/// 用途: 新增分组; 输入: 分组属性; 输出: 新分组; 必要性: 用户创建分组。
 #[tauri::command]
 pub async fn add_group(
     app: tauri::AppHandle,
     name: String,
     color: String,
     icon: String,
+    icon_color: String,
 ) -> Result<Group, String> {
-    group_service::add_group(app, name, color, icon).await
+    group_service::add_group(app, name, color, icon, icon_color).await
 }
 
 /// 用途: 更新分组; 输入: ID 与新属性; 输出: 更新后分组; 必要性: 用户编辑分组。
@@ -380,8 +380,9 @@ pub async fn update_group(
     name: String,
     color: String,
     icon: String,
+    icon_color: String,
 ) -> Result<Group, String> {
-    group_service::update_group(app, id, name, color, icon).await
+    group_service::update_group(app, id, name, color, icon, icon_color).await
 }
 
 /// 用途: 删除分组; 输入: ID; 输出: (); 必要性: 用户删除分组，密码归入未分组。

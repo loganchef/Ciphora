@@ -7,6 +7,8 @@ pub struct Group {
     pub name: String,
     pub color: String,
     pub icon: String,
+    #[serde(rename = "iconColor", default)]
+    pub icon_color: String,
     pub order: i32,
     #[serde(rename = "createdAt")]
     pub created_at: String,
@@ -15,13 +17,14 @@ pub struct Group {
 }
 
 impl Group {
-    pub fn new(name: String, color: String, icon: String, order: i32) -> Self {
+    pub fn new(name: String, color: String, icon: String, icon_color: String, order: i32) -> Self {
         let now = chrono::Utc::now().to_rfc3339();
         Self {
             id: Uuid::new_v4().to_string(),
             name,
             color,
             icon,
+            icon_color,
             order,
             created_at: now.clone(),
             updated_at: now,

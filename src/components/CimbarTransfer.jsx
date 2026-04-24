@@ -3,6 +3,7 @@ import { QrCode, Lock } from 'lucide-react';
 import { MultipleSelector } from '@/components/ui/multiple-selector';
 import CimbarQRCode from './CimbarQRCode';
 import CimbarDecoder from './CimbarDecoder';
+import { tauriAPI } from '@/api/tauri-api';
 
 export default function CimbarTransfer({ onClose, passwords = [] }) {
     const [mode, setMode] = useState('generate');
@@ -78,15 +79,19 @@ export default function CimbarTransfer({ onClose, passwords = [] }) {
 
         setIsPreparing(true);
         try {
-            // 模拟构建 payload (实际项目中调用 Tauri API)
-            const mockData = JSON.stringify({
-                selected: Array.from(selectedIds),
-                password: sharePassword,
-                timestamp: Date.now()
+            const result = await tauriAPI.prepareCimbarPayload({
+                selectedIds: Array.from(selectedIds),
+                sharePassword: sharePassword || null
             });
 
-            const encoded = new TextEncoder().encode(mockData);
-            const file = new File([encoded], `vault-${Date.now()}.ciphora`, { type: 'text/plain' });
+            if (!result || result.success === false) {
+                throw new Error(result?.message || '生成失败');
+            }
+
+            const jsonStr = JSON.stringify(result);
+            const encoded = new TextEncoder().encode(jsonStr);
+            const filename = `vault-${Date.now()}.ciphora`;
+            const file = new File([encoded], filename, { type: 'text/plain' });
 
             setPayloadFile(file);
             setPayloadData(encoded);
@@ -194,24 +199,25 @@ export default function CimbarTransfer({ onClose, passwords = [] }) {
 
                             {/* 画布区域 */}
                             <div className="space-y-2 px-3">
-                                <div className="rounded-xl bg-[#F8FAFC] m-auto flex items-center justify-center p-4">
-                                    {payloadData ? (
-                                        <CimbarQRCode
-                                            data={payloadData}
-                                            filename={payloadFile?.name || 'vault.ciphora'}
-                                            className="w-full"
-                                            onError={(err) => {
-                                                console.error('二维码生成失败:', err);
-                                                setMessage('二维码生成失败: ' + err.message);
-                                                setMessageType('error');
-                                                setPlaceholderText('生成失败');
-                                            }}
-                                            onReady={() => {
-                                                setMessage('二维码已就绪');
-                                                setMessageType('success');
-                                            }}
-                                        />
-                                    ) : (
+                                <div className="rounded-xl bg-[#F8FAFC] m-auto flex items-center justify-center p-4 overflow-hidden" style={{ maxHeight: '520px' }}>
+                                    {/* CimbarQRCode 始终挂载，避免 canvas/WebGL context 被销毁 */}
+                                    <CimbarQRCode
+                                        data={payloadData}
+                                        filename={payloadFile?.name || 'vault.ciphora'}
+                                        className="w-full"
+                                        style={{ display: payloadData ? 'block' : 'none' }}
+                                        onError={(err) => {
+                                            console.error('二维码生成失败:', err);
+                                            setMessage('二维码生成失败: ' + err.message);
+                                            setMessageType('error');
+                                            setPlaceholderText('生成失败');
+                                        }}
+                                        onReady={() => {
+                                            setMessage('二维码已就绪');
+                                            setMessageType('success');
+                                        }}
+                                    />
+                                    {!payloadData && (
                                         <div className="w-full h-[488px] flex items-center justify-center bg-white rounded-lg">
                                             <div className="text-center">
                                                 <div className="w-16 h-16 mx-auto mb-2 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>

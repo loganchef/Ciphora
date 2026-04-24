@@ -414,9 +414,16 @@ const App = () => {
                     setImportPreviewData(importResult.analysis);
                     setShowImportPreview(true);
                 } else {
-                    alert(`导入成功！${importResult.message}`);
-                    // 重新加载密码列表
-                    await loadPasswords();
+                    // 没有冲突，直接导入
+                    const allImportData = [...importResult.analysis.new];
+                    const processResult = await window.api.processImportWithResolution(allImportData, { mode: 'add', conflicts: {} });
+
+                    if (processResult.success) {
+                        alert(`导入成功！${processResult.message}`);
+                        await loadPasswords();
+                    } else {
+                        throw new Error(processResult.message);
+                    }
                 }
             } else {
                 throw new Error(importResult.message);
@@ -448,9 +455,21 @@ const App = () => {
                 }
 
                 if (importResult.success) {
-                    alert(`导入成功！${importResult.message}`);
-                    // 重新加载密码列表
-                    await loadPasswords();
+                    if (importResult.requiresPreview) {
+                        setImportPreviewData(importResult.analysis);
+                        setShowImportPreview(true);
+                    } else {
+                        // 没有冲突，直接导入
+                        const allImportData = [...importResult.analysis.new];
+                        const processResult = await window.api.processImportWithResolution(allImportData, { mode: 'add', conflicts: {} });
+
+                        if (processResult.success) {
+                            alert(`导入成功！${processResult.message}`);
+                            await loadPasswords();
+                        } else {
+                            throw new Error(processResult.message);
+                        }
+                    }
                 } else {
                     throw new Error(importResult.message);
                 }
@@ -558,6 +577,7 @@ const App = () => {
         try {
             let filters;
             let extension;
+            let defaultName;
 
             switch (fileType) {
                 case 'excel':
@@ -565,26 +585,29 @@ const App = () => {
                         { name: 'Excel文件', extensions: ['xlsx'] }
                     ];
                     extension = '.xlsx';
+                    defaultName = 'Ciphora密码导出.xlsx';
                     break;
                 case 'csv':
                     filters = [
                         { name: 'CSV文件', extensions: ['csv'] }
                     ];
                     extension = '.csv';
+                    defaultName = 'Ciphora密码导出.csv';
                     break;
                 case 'ciphora':
                     filters = [
                         { name: 'Ciphora备份文件', extensions: ['ciphora'] }
                     ];
                     extension = '.ciphora';
+                    defaultName = 'Ciphora备份.ciphora';
                     break;
                 default:
                     throw new Error('不支持的文件类型');
             }
 
-            const result = await window.api.saveFile(filters);
+            const result = await window.api.saveFile(filters, defaultName);
             if (!result.success) {
-                throw new Error(result.message);
+                return; // 用户取消
             }
 
             let filePath = result.filePath;

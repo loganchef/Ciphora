@@ -1,6 +1,6 @@
 import React from 'react';
 import GroupItem from './GroupItem';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import Icon from './Icon';
 
 const GroupSidebar = ({ currentGroupId, onGroupChange, groups, onManageGroups, passwords }) => {
   const totalCount = passwords?.length || 0;
@@ -13,14 +13,14 @@ const GroupSidebar = ({ currentGroupId, onGroupChange, groups, onManageGroups, p
   return (
     <div className="w-64 border-r bg-gray-50 p-4 space-y-2 flex-shrink-0">
       <GroupItem
-        icon="📁"
+        icon="System/folder-fill"
         name="全部"
         count={totalCount}
         active={currentGroupId === 'all'}
         onClick={() => onGroupChange('all')}
       />
       <GroupItem
-        icon="📂"
+        icon="System/folder-open-fill"
         name="未分组"
         count={ungroupedCount}
         active={currentGroupId === 'ungrouped'}
@@ -33,6 +33,7 @@ const GroupSidebar = ({ currentGroupId, onGroupChange, groups, onManageGroups, p
           icon={group.icon}
           name={group.name}
           color={group.color}
+          iconColor={group.iconColor}
           count={getGroupCount(group.id)}
           active={currentGroupId === group.id}
           onClick={() => onGroupChange(group.id)}
@@ -42,7 +43,7 @@ const GroupSidebar = ({ currentGroupId, onGroupChange, groups, onManageGroups, p
         onClick={onManageGroups}
         className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2"
       >
-        <PlusIcon className="w-4 h-4" />
+        <Icon path="System/add-line" className="w-4 h-4 text-blue-600" />
         <span>管理分组</span>
       </button>
     </div>

@@ -206,7 +206,7 @@ export const tauriAPI = {
       let data;
 
       if (fileType === 'excel') {
-        const binary = await readBinaryFile({ path: filePath });
+        const binary = await readBinaryFile(filePath);
         const workbook = XLSX.read(binary, { type: 'array' });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         data = XLSX.utils.sheet_to_json(sheet, { defval: '' });
@@ -219,6 +219,17 @@ export const tauriAPI = {
         const content = await readTextFile(filePath);
         data = JSON.parse(content);
       }
+
+      // 清理空字符串字段，避免后端保留无意义的空值
+      data = data.map(entry => {
+        const cleaned = {};
+        for (const [key, value] of Object.entries(entry)) {
+          if (value !== '' && value !== null && value !== undefined) {
+            cleaned[key] = value;
+          }
+        }
+        return cleaned;
+      });
 
       return await invoke('analyze_import_data', { passwords: data, masterPassword });
     } catch (error) {
@@ -244,18 +255,35 @@ export const tauriAPI = {
   async exportPasswords(filePath, fileType) {
     try {
       const passwords = await this.getPasswords();
+
+      // 标准化字段顺序
+      const orderedPasswords = passwords.map(p => ({
+        id: p.id || '',
+        type: p.type || 'password',
+        website: p.website || '',
+        username: p.username || '',
+        password: p.password || '',
+        secret: p.secret || '',
+        notes: p.notes || '',
+        description: p.description || '',
+        groupId: p.groupId || null,
+        createdAt: p.createdAt || '',
+        updatedAt: p.updatedAt || '',
+        ...p // 保留其他自定义字段
+      }));
+
       if (fileType === 'excel') {
-        const worksheet = XLSX.utils.json_to_sheet(passwords);
+        const worksheet = XLSX.utils.json_to_sheet(orderedPasswords);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Passwords');
         const buffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
-        await writeBinaryFile({ path: filePath, contents: new Uint8Array(buffer) });
+        await writeBinaryFile(filePath, new Uint8Array(buffer));
       } else if (fileType === 'text') {
-        const worksheet = XLSX.utils.json_to_sheet(passwords);
+        const worksheet = XLSX.utils.json_to_sheet(orderedPasswords);
         const csv = XLSX.utils.sheet_to_csv(worksheet);
         await writeTextFile(filePath, '\uFEFF' + csv);
       } else {
-        await writeTextFile(filePath, JSON.stringify(passwords, null, 2));
+        await writeTextFile(filePath, JSON.stringify(orderedPasswords, null, 2));
       }
       return { success: true, message: `成功导出 ${passwords.length} 条记录` };
     } catch (error) {
@@ -407,20 +435,21 @@ export const tauriAPI = {
     }
   },
 
-  async saveFile(filters) {
+  async saveFile(filters, defaultPath) {
     try {
       const extensions = filters?.[0]?.extensions || [];
       const selected = await save({
+        defaultPath,
         filters: filters ? [{
           name: filters[0].name || '文件',
           extensions: extensions.map(ext => ext.replace('.', ''))
         }] : []
       });
-      
+
       if (!selected) {
         return { success: false, message: '未选择保存位置' };
       }
-      
+
       return {
         success: true,
         filePath: typeof selected === 'string' ? selected : selected.path
@@ -428,6 +457,26 @@ export const tauriAPI = {
     } catch (error) {
       console.error('保存文件失败:', error);
       return { success: false, message: error.message };
+    }
+  },
+
+  async writeBinaryFile(filePath, contents) {
+    try {
+      await writeBinaryFile(filePath, contents);
+      return { success: true };
+    } catch (error) {
+      console.error('写入二进制文件失败:', error);
+      throw error;
+    }
+  },
+
+  async writeTextFile(filePath, contents) {
+    try {
+      await writeTextFile(filePath, contents);
+      return { success: true };
+    } catch (error) {
+      console.error('写入文本文件失败:', error);
+      throw error;
     }
   },
 
@@ -508,18 +557,18 @@ export const tauriAPI = {
     }
   },
 
-  async addGroup(name, color, icon) {
+  async addGroup(name, color, icon, iconColor) {
     try {
-      return await invoke('add_group', { name, color, icon });
+      return await invoke('add_group', { name, color, icon, iconColor });
     } catch (error) {
       console.error('添加分组失败:', error);
       throw error;
     }
   },
 
-  async updateGroup(id, name, color, icon) {
+  async updateGroup(id, name, color, icon, iconColor) {
     try {
-      return await invoke('update_group', { id, name, color, icon });
+      return await invoke('update_group', { id, name, color, icon, iconColor });
     } catch (error) {
       console.error('更新分组失败:', error);
       throw error;
@@ -630,29 +679,39 @@ if (typeof window !== 'undefined') {
 
 const createTemplateData = () => ([
   {
+    id: 'example-id-1',
     website: 'example.com',
     username: 'user@example.com',
     password: 'your_password_here',
     notes: '示例备注',
+    description: '示例描述',
     type: 'password',
+    groupId: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
   {
+    id: 'example-id-2',
     website: 'github.com',
     username: 'your_username',
     password: 'your_github_password',
     notes: 'GitHub账户',
+    description: 'GitHub账户密码',
     type: 'password',
+    groupId: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
   {
+    id: 'example-id-3',
     website: 'Google Authenticator',
     username: 'your_email@example.com',
+    password: '',
     secret: 'JBSWY3DPEHPK3PXP',
     notes: 'MFA验证码',
+    description: '两步验证',
     type: 'mfa',
+    groupId: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { XMarkIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
+import Icon from './Icon';
 
 const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
     const [selectedFormat, setSelectedFormat] = useState('');
@@ -8,15 +8,15 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
     const getFormats = () => {
         if (type === 'import') {
             return [
-                { id: 'excel', name: 'Excel文件', description: '从 .xlsx/.xls 文件导入数据', icon: '📊' },
-                { id: 'csv', name: 'CSV文件', description: '从 .csv/.txt 文件导入数据', icon: '📄' },
-                { id: 'ciphora', name: 'Ciphora备份文件', description: '从 .ciphora 备份文件恢复', icon: '🔐' }
+                { id: 'excel', name: 'Excel文件', description: '从 .xlsx/.xls 文件导入数据', icon: 'Document/file-excel-2-fill' },
+                { id: 'csv', name: 'CSV文件', description: '从 .csv/.txt 文件导入数据', icon: 'Document/file-text-fill' },
+                { id: 'ciphora', name: 'Ciphora备份文件', description: '从 .ciphora 备份文件恢复', icon: 'System/lock-fill' }
             ];
         } else {
             return [
-                { id: 'excel', name: 'Excel文件', description: '导出为 .xlsx 格式', icon: '📊' },
-                { id: 'csv', name: 'CSV文件', description: '导出为 .csv 格式', icon: '📄' },
-                { id: 'ciphora', name: 'Ciphora备份文件', description: '导出为 .ciphora 备份格式', icon: '🔐' }
+                { id: 'excel', name: 'Excel文件', description: '导出为 .xlsx 格式', icon: 'Document/file-excel-2-fill' },
+                { id: 'csv', name: 'CSV文件', description: '导出为 .csv 格式', icon: 'Document/file-text-fill' },
+                { id: 'ciphora', name: 'Ciphora备份文件', description: '导出为 .ciphora 备份格式', icon: 'System/lock-fill' }
             ];
         }
     };
@@ -42,32 +42,37 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
 
     const handleDownloadTemplate = async (format) => {
         try {
-            let templateType;
+            let templateType, filters, defaultName;
             if (format === 'excel') {
                 templateType = 'excel';
+                filters = [{ name: 'Excel文件', extensions: ['xlsx'] }];
+                defaultName = 'Ciphora导入模板.xlsx';
             } else if (format === 'csv') {
                 templateType = 'csv';
+                filters = [{ name: 'CSV文件', extensions: ['csv'] }];
+                defaultName = 'Ciphora导入模板.csv';
             } else {
                 alert('该格式不支持模板下载');
                 return;
             }
 
+            // 使用 Tauri 文件保存对话框
+            const saveResult = await window.api.saveFile(filters, defaultName);
+            if (!saveResult.success) {
+                return; // 用户取消
+            }
+
             const result = await window.api.generateImportTemplate(templateType);
             if (result.success) {
-                // 创建下载链接
-                const blob = new Blob([result.data], { type: result.mimeType });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = result.filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-
-                alert(`模板下载成功：${result.filename}`);
+                // 写入文件
+                if (templateType === 'excel') {
+                    await window.api.writeBinaryFile(saveResult.filePath, new Uint8Array(result.data));
+                } else {
+                    await window.api.writeTextFile(saveResult.filePath, result.data);
+                }
+                alert(`模板下载成功：${saveResult.filePath}`);
             } else {
-                alert(`模板下载失败：${result.message}`);
+                alert(`模板生成失败：${result.message}`);
             }
         } catch (error) {
             console.error('下载模板失败:', error);
@@ -82,19 +87,24 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <div>
-                        <h2 className="text-xl font-semibold text-gray-900">
-                            {type === 'import' ? '📥 导入数据' : '📤 导出数据'}
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-1">
-                            {type === 'import' ? '选择要导入的文件格式' : '选择要导出的文件格式'}
-                        </p>
+                    <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${type === 'import' ? 'bg-blue-100' : 'bg-green-100'}`}>
+                            <Icon path={type === 'import' ? 'System/download-2-fill' : 'System/upload-2-fill'} className={`w-5 h-5 ${type === 'import' ? 'text-blue-600' : 'text-green-600'}`} />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-semibold text-gray-900">
+                                {type === 'import' ? '导入数据' : '导出数据'}
+                            </h2>
+                            <p className="text-sm text-gray-500 mt-1">
+                                {type === 'import' ? '选择要导入的文件格式' : '选择要导出的文件格式'}
+                            </p>
+                        </div>
                     </div>
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                        <XMarkIcon className="w-5 h-5 text-gray-500" />
+                        <Icon path="System/close-line" className="w-5 h-5 text-gray-500" />
                     </button>
                 </div>
 
@@ -129,7 +139,7 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
                                             <div className="w-2 h-2 rounded-full bg-white"></div>
                                         )}
                                     </div>
-                                    <span className="text-2xl">{format.icon}</span>
+                                    <Icon path={format.icon} className="w-6 h-6 text-gray-600" />
                                     <div>
                                         <div className="font-medium text-gray-900">
                                             {format.name}
@@ -150,7 +160,7 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
                                         className="ml-3 p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                         title="下载模板"
                                     >
-                                        <DocumentArrowDownIcon className="w-5 h-5" />
+                                        <Icon path="System/download-2-line" className="w-5 h-5" />
                                     </button>
                                 )}
                             </div>
@@ -169,13 +179,16 @@ const ImportExportModal = ({ isOpen, onClose, onImport, onExport, type }) => {
                     <button
                         onClick={handleConfirm}
                         disabled={!selectedFormat}
-                        className={`px-6 py-2 rounded-lg transition-colors ${selectedFormat
+                        className={`px-6 py-2 rounded-lg transition-colors flex items-center gap-2 ${selectedFormat
                             ? 'bg-blue-600 text-white hover:bg-blue-700'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             }`}
                     >
+                        {selectedFormat && (
+                            <Icon path={type === 'import' ? 'System/download-2-fill' : 'System/upload-2-fill'} className="w-4 h-4" />
+                        )}
                         {selectedFormat
-                            ? (type === 'import' ? '📥 开始导入' : '📤 开始导出')
+                            ? (type === 'import' ? '开始导入' : '开始导出')
                             : '请先选择格式'
                         }
                     </button>
