@@ -69,14 +69,14 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
                     </div>
 
                     {/* Search + multi-select toggle + add */}
-                    <div className={`flex items-center gap-2 ${isMobile ? '' : 'justify-end'}`}>
-                        <div className={isMobile ? 'flex-1' : 'w-64'}>
+                    <div className={`flex items-center gap-2 ${isMobile ? '' : ''}`}>
+                        <div className={isMobile ? 'flex-1' : 'flex-1'}>
                             <SearchBox value={searchQuery} onChange={setSearchQuery} />
                         </div>
                         {!isMobile && (
                             <button
                                 onClick={() => { setSelectionMode(!selectionMode); setSelectedIds([]); }}
-                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                                     selectionMode
                                         ? 'bg-blue-100 text-blue-700'
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -88,7 +88,7 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
                         <button
                             onClick={onAddPassword}
                             disabled={isLoading}
-                            className={`inline-flex items-center gap-1.5 ${isMobile ? 'px-4 py-2 flex-1 justify-center' : 'px-3 py-2'} bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap`}
+                            className={`inline-flex items-center gap-1.5 ${isMobile ? 'px-4 py-2 flex-1 justify-center' : 'px-3 py-2'} bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0`}
                         >
                             <PlusIcon className="w-4 h-4" />
                             <span>{isLoading ? '加载中...' : '添加'}</span>
