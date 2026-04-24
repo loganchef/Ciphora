@@ -54,23 +54,35 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
 
     return (
         <div className="h-full flex flex-col">
-            {/* Toolbar: group tabs on first row, search + buttons on second row */}
+            {/* Toolbar: group tabs | search | buttons in one row */}
             <div className={`flex-shrink-0 ${isMobile ? 'p-3 safe-area-top' : 'p-4'}`}>
-                <div className="max-w-7xl mx-auto space-y-3">
+                <div className={`max-w-7xl mx-auto ${isMobile ? 'space-y-3' : 'flex items-center gap-3'}`}>
                     {/* Group tabs — scroll horizontally if too many */}
-                    <div className="overflow-x-auto">
-                        <GroupTabs
-                            currentGroupId={currentGroupId}
-                            onGroupChange={setCurrentGroupId}
-                            groups={groups}
-                            passwords={passwords}
-                            onManageGroups={() => setShowGroupModal(true)}
-                        />
-                    </div>
+                    {isMobile ? (
+                        <div className="overflow-x-auto">
+                            <GroupTabs
+                                currentGroupId={currentGroupId}
+                                onGroupChange={setCurrentGroupId}
+                                groups={groups}
+                                passwords={passwords}
+                                onManageGroups={() => setShowGroupModal(true)}
+                            />
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto flex-shrink-0" style={{ maxWidth: '50%' }}>
+                            <GroupTabs
+                                currentGroupId={currentGroupId}
+                                onGroupChange={setCurrentGroupId}
+                                groups={groups}
+                                passwords={passwords}
+                                onManageGroups={() => setShowGroupModal(true)}
+                            />
+                        </div>
+                    )}
 
                     {/* Search + multi-select toggle + add */}
-                    <div className={`flex items-center gap-2 ${isMobile ? '' : ''}`}>
-                        <div className={isMobile ? 'flex-1' : 'flex-1'}>
+                    <div className={`flex items-center gap-2 ${isMobile ? '' : 'flex-1 justify-end'}`}>
+                        <div className={isMobile ? 'flex-1' : 'w-64 flex-shrink-0'}>
                             <SearchBox value={searchQuery} onChange={setSearchQuery} />
                         </div>
                         {!isMobile && (
