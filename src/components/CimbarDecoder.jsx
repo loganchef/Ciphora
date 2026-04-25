@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Camera, CheckCircle2, RotateCcw, FileVideo, Upload } from 'lucide-react';
+import { Camera, CheckCircle2, RotateCcw, FileVideo, Upload, Monitor, Zap } from 'lucide-react';
 import { loadCimbarEngine } from '@/lib/cimbar-engine';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { tauriAPI } from '@/api/tauri-api';
+import { readFile } from '@tauri-apps/plugin-fs';
 
 function UTF8ToString(heap, ptr, maxBytesToRead) {
     if (!ptr) return '';
@@ -14,15 +16,9 @@ function UTF8ToString(heap, ptr, maxBytesToRead) {
     let str = '';
     while (ptr < endPtr) {
         let u0 = heap[ptr++];
-        if (!(u0 & 128)) {
-            str += String.fromCharCode(u0);
-            continue;
-        }
+        if (!(u0 & 128)) { str += String.fromCharCode(u0); continue; }
         let u1 = heap[ptr++] & 63;
-        if ((u0 & 224) == 192) {
-            str += String.fromCharCode((u0 & 31) << 6 | u1);
-            continue;
-        }
+        if ((u0 & 224) == 192) { str += String.fromCharCode((u0 & 31) << 6 | u1); continue; }
         let u2 = heap[ptr++] & 63;
         if ((u0 & 240) == 224) {
             u0 = (u0 & 15) << 12 | u1 << 6 | u2;
@@ -30,13 +26,20 @@ function UTF8ToString(heap, ptr, maxBytesToRead) {
             u0 = (u0 & 7) << 18 | u1 << 12 | u2 << 6 | heap[ptr++] & 63;
         }
         if (u0 < 65536) str += String.fromCharCode(u0);
-        else {
-            let ch = u0 - 65536;
-            str += String.fromCharCode(55296 | ch >> 10, 56320 | ch & 1023);
-        }
+        else { let ch = u0 - 65536; str += String.fromCharCode(55296 | ch >> 10, 56320 | ch & 1023); }
     }
     return str;
 }
+
+// 官方模式定义
+const MODE_MAP = {
+    'auto': 0,
+    'b': 68,
+    'bm': 67,
+    'bu': 66,
+    '4c': 4
+};
+const MODE_VALS = [66, 68, 67, 4]; // autodetect 轮换顺序
 
 export default function CimbarDecoder({ onDecoded, onError, onProgress }) {
     const { t } = useTranslation();
@@ -44,88 +47,208 @@ export default function CimbarDecoder({ onDecoded, onError, onProgress }) {
     const [isFinished, setIsFinished] = useState(false);
     const [progress, setProgress] = useState(0);
     const [message, setMessage] = useState('');
-    const [status, setStatus] = useState('idle'); 
+    const [status, setStatus] = useState('idle');
+    const [decodeMode, setDecodeMode] = useState('auto');
 
     const videoRef = useRef(null);
     const isDecodingRef = useRef(false);
     const isMountedRef = useRef(true);
-    const fileInputRef = useRef(null);
+    const currentBlobUrl = useRef(null);
+    const wasmBuffsRef = useRef({ img: null, fountain: null, err: null });
+    const frameCounterRef = useRef(0);
 
     const init = useCallback((retry = false) => {
         setStatus('loading');
         loadCimbarEngine(retry).then(() => {
             if (isMountedRef.current) setStatus('ready');
-        }).catch(err => {
+        }).catch(() => {
             if (isMountedRef.current) setStatus('error');
+        });
+    }, []);
+
+    const mallocPersist = useCallback((name, size) => {
+        const M = window.Module;
+        const buffs = wasmBuffsRef.current;
+        if (buffs[name] && buffs[name].buffer !== M.HEAPU8.buffer) {
+            buffs[name] = new Uint8Array(M.HEAPU8.buffer, buffs[name].byteOffset, buffs[name].byteLength);
+        }
+        if (!buffs[name] || size > buffs[name].length) {
+            if (buffs[name]) M._free(buffs[name].byteOffset);
+            const ptr = M._malloc(size);
+            buffs[name] = new Uint8Array(M.HEAPU8.buffer, ptr, size);
+        }
+        return buffs[name];
+    }, []);
+
+    const freeWasmBuffs = useCallback(() => {
+        const M = window.Module;
+        if (!M) return;
+        const buffs = wasmBuffsRef.current;
+        ['img', 'fountain', 'err'].forEach(name => {
+            if (buffs[name]) { try { M._free(buffs[name].byteOffset); } catch(e) {} buffs[name] = null; }
         });
     }, []);
 
     const stopDecoding = useCallback(() => {
         isDecodingRef.current = false;
         setIsDecoding(false);
-        if (videoRef.current?.srcObject) {
-            videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-            videoRef.current.srcObject = null;
+        if (videoRef.current) {
+            if (videoRef.current.srcObject) {
+                videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+                videoRef.current.srcObject = null;
+            }
+            videoRef.current.src = '';
+            videoRef.current.load();
         }
-    }, []);
+        if (currentBlobUrl.current) {
+            URL.revokeObjectURL(currentBlobUrl.current);
+            currentBlobUrl.current = null;
+        }
+        freeWasmBuffs();
+    }, [freeWasmBuffs]);
 
-    // 核心解码逻辑
-    const processFrame = useCallback((video, tempCanvas, ctx, Module) => {
-        if (!isDecodingRef.current) return;
+    const reassembleFile = useCallback((fileId, video) => {
+        const Module = window.Module;
+        const errBuff = mallocPersist('err', 1024);
 
-        tempCanvas.width = video.videoWidth;
-        tempCanvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
+        const fileSize = Module._cimbard_get_filesize(fileId);
+        if (!fileSize) return;
+
+        const fnLen = Module._cimbard_get_filename(fileId, errBuff.byteOffset, errBuff.length);
+        let filename = 'vault.ciphora';
+        if (fnLen > 0) {
+            filename = new TextDecoder('utf-8').decode(
+                new Uint8Array(Module.HEAPU8.buffer, errBuff.byteOffset, fnLen)
+            );
+        }
+
+        const decompBufSize = Module._cimbard_get_decompress_bufsize();
+        const decompPtr = Module._malloc(decompBufSize);
+        
+        const chunks = [];
+        let totalRead = 0;
+        // 循环读取直到解压完成
+        while (true) {
+            const readSize = Module._cimbard_decompress_read(fileId, decompPtr, decompBufSize);
+            if (readSize <= 0) break;
+            chunks.push(new Uint8Array(Module.HEAPU8.buffer, decompPtr, readSize).slice());
+            totalRead += readSize;
+        }
+        Module._free(decompPtr);
+
+        if (totalRead > 0) {
+            const finalData = new Uint8Array(totalRead);
+            let offset = 0;
+            for (const chunk of chunks) {
+                finalData.set(chunk, offset);
+                offset += chunk.length;
+            }
+
+            isDecodingRef.current = false;
+            setIsDecoding(false);
+            setIsFinished(true);
+            setProgress(100);
+            setMessage(t('cimbar.decodeSuccess'));
+
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(tr => tr.stop());
+                video.srcObject = null;
+            }
+            video.pause();
+
+            const blob = new Blob([finalData]);
+            onDecoded?.({ filename, data: blob });
+        }
+    }, [mallocPersist, onDecoded, t]);
+
+    const processFrame = useCallback(async (video, tempCanvas, ctx, Module) => {
+        if (!isDecodingRef.current || !isMountedRef.current) return;
+        if (video.ended && !video.srcObject) { stopDecoding(); return; }
+
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        if (!vw || !vh) {
+            requestAnimationFrame(() => processFrame(video, tempCanvas, ctx, Module));
+            return;
+        }
 
         try {
-            const imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-            const bufSize = Module._cimbard_get_bufsize();
-            const buffer = Module._malloc(bufSize);
-            const imageDataPtr = Module._malloc(imageData.data.length);
-            
-            new Uint8Array(Module.HEAPU8.buffer, imageDataPtr, imageData.data.length).set(imageData.data);
+            let pixels, width, height, format = 'RGBA';
 
-            const result = Module._cimbard_scan_extract_decode(imageDataPtr, imageData.width, imageData.height, buffer, bufSize, 0);
-
-            if (result > 0) {
-                const progressValue = Math.min(99, result * 10);
-                setMessage(`${t('cimbar.analyzing', { frame: result })}`);
-                setProgress(progressValue);
-                onProgress?.(progressValue);
-            }
-
-            const fileSize = Module._cimbard_get_filesize(0);
-            if (fileSize > 0) {
-                const filenameSize = 256;
-                const filenamePtr = Module._malloc(filenameSize);
-                Module._cimbard_get_filename(0, filenamePtr, filenameSize);
-                const filename = UTF8ToString(Module.HEAPU8, filenamePtr, filenameSize);
-                Module._free(filenamePtr);
-
-                const decompressBufSize = Module._cimbard_get_decompress_bufsize();
-                const decompressBuf = Module._malloc(decompressBufSize);
-                const readSize = Module._cimbard_decompress_read(0, decompressBuf, decompressBufSize);
-
-                if (readSize > 0) {
-                    const blob = new Blob([new Uint8Array(Module.HEAPU8.buffer, decompressBuf, readSize)]);
-                    isDecodingRef.current = false;
-                    setIsDecoding(false);
-                    setIsFinished(true);
-                    setMessage(t('cimbar.importSuccess'));
-                    setProgress(100);
-                    
-                    if (video.srcObject) {
-                        video.srcObject.getTracks().forEach(t => t.stop());
-                        video.srcObject = null;
-                    }
-                    onDecoded?.({ filename, data: blob });
+            // 优先使用 VideoFrame API (更高效)
+            if (video.requestVideoFrameCallback && typeof window.VideoFrame === 'function') {
+                try {
+                    const vf = new VideoFrame(video);
+                    width = vf.displayWidth;
+                    height = vf.displayHeight;
+                    const size = vf.allocationSize({ format: 'RGBA' });
+                    pixels = mallocPersist('img', size);
+                    await vf.copyTo(pixels, { format: 'RGBA' });
+                    vf.close();
+                } catch (e) {
+                    // Fallback to Canvas
                 }
-                Module._free(decompressBuf);
             }
-            Module._free(imageDataPtr);
-            Module._free(buffer);
+
+            if (!pixels) {
+                // 默认使用 512x512 以平衡性能和精度
+                const targetSize = 512;
+                if (tempCanvas.width !== targetSize || tempCanvas.height !== targetSize) {
+                    tempCanvas.width = targetSize;
+                    tempCanvas.height = targetSize;
+                }
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(video, 0, 0, vw, vh, 0, 0, targetSize, targetSize);
+                const imageData = ctx.getImageData(0, 0, targetSize, targetSize);
+                pixels = mallocPersist('img', imageData.data.length);
+                pixels.set(imageData.data);
+                width = targetSize;
+                height = targetSize;
+            }
+
+            const fountainBufSize = Module._cimbard_get_bufsize();
+            const fountainBuff = mallocPersist('fountain', fountainBufSize);
+
+            frameCounterRef.current += 1;
+            let activeMode = MODE_MAP[decodeMode];
+            if (activeMode === 0) {
+                // Auto 模式下轮换，但放慢轮换频率以增加识别机会
+                activeMode = MODE_VALS[Math.floor(frameCounterRef.current / 3) % MODE_VALS.length];
+            }
+            Module._cimbard_configure_decode(activeMode);
+
+            const len = Module._cimbard_scan_extract_decode(
+                wasmBuffsRef.current.img.byteOffset, width, height,
+                4, // RGBA
+                fountainBuff.byteOffset, fountainBuff.length
+            );
+
+            if (len > 0) {
+                const msgbuf = new Uint8Array(Module.HEAPU8.buffer, fountainBuff.byteOffset, len).slice();
+                const errBuff = mallocPersist('err', 1024);
+                const errLen = Module._cimbard_get_report(errBuff.byteOffset, errBuff.length);
+
+                if (errLen > 0) {
+                    const errView = new Uint8Array(Module.HEAPU8.buffer, errBuff.byteOffset, errLen);
+                    try {
+                        const report = JSON.parse(new TextDecoder().decode(errView));
+                        if (Array.isArray(report)) {
+                            const maxProg = Math.max(...report);
+                            setProgress(Math.min(99, Math.round(maxProg * 100)));
+                            setMessage(t('cimbar.analyzing', { frame: frameCounterRef.current }));
+                        }
+                    } catch(e) {}
+                }
+
+                const fountRes = Module._cimbard_fountain_decode(fountainBuff.byteOffset, msgbuf.length);
+                if (fountRes > 0) {
+                    reassembleFile(Number(BigInt(fountRes) & 0xFFFFFFFFn), video);
+                    return;
+                }
+            }
         } catch (err) {
-            console.error('Decode failed:', err);
+            console.error('Decode frame error:', err);
         }
 
         if (isDecodingRef.current) {
@@ -135,73 +258,97 @@ export default function CimbarDecoder({ onDecoded, onError, onProgress }) {
                 requestAnimationFrame(() => processFrame(video, tempCanvas, ctx, Module));
             }
         }
-    }, [onDecoded, onProgress]);
+    }, [decodeMode, t, stopDecoding, mallocPersist, reassembleFile]);
 
-    const startDecoding = useCallback(async () => {
-        if (!window.Module || !window.Module._cimbard_scan_extract_decode) {
-            setStatus('error');
-            setMessage(t('cimbar.engineError'));
+    const startVideoDecoding = useCallback(async (stream) => {
+        const video = videoRef.current;
+        if (!video || !window.Module) return;
+
+        setIsFinished(false);
+        setIsDecoding(true);
+        setStatus('decoding');
+        isDecodingRef.current = true;
+        frameCounterRef.current = 0;
+        freeWasmBuffs();
+
+        video.srcObject = stream;
+        try {
+            await video.play();
+        } catch(e) {
+            setMessage(t('cimbar.videoPlayError'));
+            setIsDecoding(false);
+            isDecodingRef.current = false;
+            stream.getTracks().forEach(tr => tr.stop());
             return;
         }
 
-        setIsFinished(false);
-        setIsDecoding(true);
-        setStatus('decoding');
-        setMessage(t('cimbar.cameraStarting'));
-        isDecodingRef.current = true;
+        const tempCanvas = document.createElement('canvas');
+        const ctx = tempCanvas.getContext('2d', { willReadFrequently: true });
+        processFrame(video, tempCanvas, ctx, window.Module);
+    }, [processFrame, t, freeWasmBuffs]);
 
+    const startCameraDecoding = useCallback(async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment', width: 1280, height: 720 }
+                audio: false,
+                video: {
+                    facingMode: 'environment',
+                    width: { min: 720, ideal: 1920 },
+                    height: { min: 720, ideal: 1080 },
+                    frameRate: { ideal: 15 }
+                }
             });
-
-            if (!isMountedRef.current || !isDecodingRef.current) {
-                stream.getTracks().forEach(t => t.stop());
-                return;
-            }
-
-            videoRef.current.srcObject = stream;
-            await videoRef.current.play();
-
-            const Module = window.Module;
-            const tempCanvas = document.createElement('canvas');
-            const ctx = tempCanvas.getContext('2d', { willReadFrequently: true });
-
-            if (Module._cimbard_configure_decode) Module._cimbard_configure_decode(68); 
-            processFrame(videoRef.current, tempCanvas, ctx, Module);
+            await startVideoDecoding(stream);
         } catch (error) {
             setMessage(t('cimbar.cameraError', { error: error.message }));
-            setStatus('error');
             setIsDecoding(false);
-            isDecodingRef.current = false;
         }
-    }, [processFrame]);
+    }, [startVideoDecoding, t]);
 
-    // 文件导入解码逻辑
-    const handleFileImport = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file || !window.Module) return;
-
-        setIsFinished(false);
-        setIsDecoding(true);
-        setStatus('decoding');
-        setMessage(t('cimbar.videoParsingFile'));
-        isDecodingRef.current = true;
-
-        const video = videoRef.current;
-        const url = URL.createObjectURL(file);
-        video.srcObject = null;
-        video.src = url;
-        video.loop = true;
-        video.muted = true;
-        
+    const startScreenDecoding = useCallback(async () => {
         try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                audio: false,
+                video: { width: { ideal: 1920 }, height: { ideal: 1080 } }
+            });
+            stream.getVideoTracks()[0].addEventListener('ended', () => {
+                if (isDecodingRef.current) stopDecoding();
+            });
+            await startVideoDecoding(stream);
+        } catch (error) {
+            if (error.name !== 'NotAllowedError') {
+                setMessage(t('cimbar.cameraError', { error: error.message }));
+            }
+            setIsDecoding(false);
+        }
+    }, [startVideoDecoding, stopDecoding, t]);
+
+    const handleImportVideo = async () => {
+        try {
+            const res = await tauriAPI.selectFile([{ name: 'Video Files', extensions: ['webm', 'mp4', 'mkv', 'mov'] }]);
+            if (!res.success || !res.filePath) return;
+
+            setIsFinished(false);
+            setIsDecoding(true);
+            setStatus('decoding');
+            setMessage(t('cimbar.videoParsingFile'));
+            isDecodingRef.current = true;
+            freeWasmBuffs();
+
+            const binaryData = await readFile(res.filePath);
+            const blobUrl = URL.createObjectURL(new Blob([binaryData]));
+            currentBlobUrl.current = blobUrl;
+
+            const video = videoRef.current;
+            video.srcObject = null;
+            video.src = blobUrl;
+            video.loop = true;
+            video.muted = true;
             await video.play();
-            const Module = window.Module;
+            
             const tempCanvas = document.createElement('canvas');
             const ctx = tempCanvas.getContext('2d', { willReadFrequently: true });
-            if (Module._cimbard_configure_decode) Module._cimbard_configure_decode(68);
-            processFrame(video, tempCanvas, ctx, Module);
+            processFrame(video, tempCanvas, ctx, window.Module);
         } catch (err) {
             setMessage(t('cimbar.videoPlayError'));
             setIsDecoding(false);
@@ -211,34 +358,31 @@ export default function CimbarDecoder({ onDecoded, onError, onProgress }) {
     useEffect(() => {
         isMountedRef.current = true;
         init();
-        return () => {
-            isMountedRef.current = false;
-            stopDecoding();
-        };
+        return () => { isMountedRef.current = false; stopDecoding(); };
     }, [init, stopDecoding]);
 
     return (
         <div className="flex flex-col gap-4 h-full relative">
             <div className="relative flex-1 bg-black rounded-3xl overflow-hidden shadow-inner border border-gray-100">
-                <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
-                
+                <video ref={videoRef} className="w-full h-full object-contain" autoPlay playsInline muted />
                 {!isDecoding && !isFinished && (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-900/40 backdrop-blur-[2px]">
                         <FileVideo className="w-16 h-16 text-white/30" />
                     </div>
                 )}
-
                 {isFinished && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-emerald-500/10 backdrop-blur-xl animate-in fade-in duration-500">
                         <CheckCircle2 className="w-20 h-20 text-emerald-500 mb-4" />
                         <h4 className="text-xl font-black text-emerald-600 uppercase tracking-widest">{t('cimbar.received')}</h4>
-                        <button
-                            onClick={() => { setIsFinished(false); videoRef.current.src = ""; }}
-                            className="mt-8 px-6 py-2 bg-emerald-500 text-white text-[10px] font-black rounded-full hover:bg-emerald-600 transition-colors"
-                        >
-                            <RotateCcw className="w-3.5 h-3.5 inline mr-1" />
-                            {t('cimbar.reset')}
-                        </button>
+                        <button onClick={() => { setIsFinished(false); setProgress(0); setMessage(''); if (videoRef.current) videoRef.current.src = ''; }} className="mt-8 px-6 py-2 bg-emerald-500 text-white text-[10px] font-black rounded-full hover:bg-emerald-600 transition-all"><RotateCcw className="w-3.5 h-3.5 inline mr-1" />{t('cimbar.reset')}</button>
+                    </div>
+                )}
+                {/* 模式切换浮层 */}
+                {!isFinished && (
+                    <div className="absolute top-4 right-4 flex gap-1 p-1 bg-black/40 backdrop-blur-md rounded-xl border border-white/10 z-50">
+                        {Object.keys(MODE_MAP).map(m => (
+                            <button key={m} onClick={() => setDecodeMode(m)} className={cn("px-3 py-1 text-[9px] font-black uppercase rounded-lg transition-all", decodeMode === m ? "bg-white text-blue-600 shadow-sm" : "text-white/50 hover:text-white")}>{m}</button>
+                        ))}
                     </div>
                 )}
             </div>
@@ -246,51 +390,21 @@ export default function CimbarDecoder({ onDecoded, onError, onProgress }) {
             <div className="flex gap-2 shrink-0">
                 {!isFinished && (
                     <>
-                        <button
-                            onClick={isDecoding ? stopDecoding : startDecoding}
-                            disabled={status === 'loading'}
-                            className={cn(
-                                "flex-[2] py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all",
-                                isDecoding ? "bg-red-500 text-white shadow-lg shadow-red-100" : "bg-blue-600 text-white shadow-lg shadow-blue-100"
-                            )}
-                        >
-                            {status === 'loading' ? t('cimbar.loading') : isDecoding ? t('cimbar.stop') : t('cimbar.openCamera')}
-                        </button>
-                        
+                        <button onClick={isDecoding ? stopDecoding : startCameraDecoding} disabled={status === 'loading'} className={cn("flex-[2] py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2", isDecoding ? "bg-red-500 text-white shadow-lg shadow-red-100" : "bg-blue-600 text-white shadow-lg shadow-blue-100")}><Camera className="w-3.5 h-3.5" />{status === 'loading' ? t('cimbar.loading') : isDecoding ? t('cimbar.stop') : t('cimbar.openCamera')}</button>
                         {!isDecoding && (
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="flex-1 py-3.5 rounded-2xl bg-gray-900 text-white font-black text-[10px] uppercase tracking-[0.1em] hover:bg-black transition-all flex items-center justify-center gap-2"
-                            >
-                                <Upload className="w-3.5 h-3.5" />
-                                {t('cimbar.importFile')}
-                            </button>
+                            <>
+                                <button onClick={startScreenDecoding} className="flex-1 py-3.5 rounded-2xl bg-gray-700 text-white font-black text-[10px] uppercase tracking-[0.1em] hover:bg-gray-800 transition-all flex items-center justify-center gap-2"><Monitor className="w-3.5 h-3.5" />{t('cimbar.screenRecord')}</button>
+                                <button onClick={handleImportVideo} className="flex-1 py-3.5 rounded-2xl bg-gray-900 text-white font-black text-[10px] uppercase tracking-[0.1em] hover:bg-black transition-all flex items-center justify-center gap-2"><Upload className="w-3.5 h-3.5" />{t('cimbar.importFile')}</button>
+                            </>
                         )}
                     </>
                 )}
-                <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept="video/*" 
-                    onChange={handleFileImport}
-                />
             </div>
-
             {progress > 0 && !isFinished && (
-                <div className="px-1 shrink-0">
-                    <div className="h-1 w-full bg-gray-50 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: `${progress}%` }} />
-                    </div>
-                </div>
+                <div className="px-1 shrink-0"><div className="h-1 w-full bg-gray-50 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: `${progress}%` }} /></div></div>
             )}
-
             {message && !isFinished && (
-                <div className={`text-[10px] font-black uppercase text-center py-2.5 px-4 rounded-xl border transition-all shrink-0 ${
-                    message.includes('✅') ? "text-emerald-700 bg-emerald-50 border-emerald-100" : "text-blue-600 bg-blue-50 border-blue-100"
-                }`}>
-                    {message}
-                </div>
+                <div className={cn("text-[10px] font-black uppercase text-center py-2.5 px-4 rounded-xl border transition-all shrink-0", progress === 100 ? 'text-emerald-700 bg-emerald-50 border-emerald-100' : 'text-blue-600 bg-blue-50 border-blue-100')}>{message}</div>
             )}
         </div>
     );

@@ -30,14 +30,21 @@
       "identifier": "fs:allow-app-read",
       "allow": [
         { "path": "$APPDATA/*" },
-        { "path": "$APPDATA/**" }
+        { "path": "$APPDATA/**" },
+        { "path": "$DOWNLOAD/*" },
+        { "path": "$DOCUMENTS/*" },
+        { "path": "$HOME/*" },
+        { "path": "**" }
       ]
     },
     {
       "identifier": "fs:allow-app-write",
       "allow": [
         { "path": "$APPDATA/*" },
-        { "path": "$APPDATA/**" }
+        { "path": "$APPDATA/**" },
+        { "path": "$DOWNLOAD/*" },
+        { "path": "$DOCUMENTS/*" },
+        { "path": "**" }
       ]
     }
   ]
