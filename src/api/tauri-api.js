@@ -322,6 +322,21 @@ export const tauriAPI = {
     return await this.restoreBackup(backupData, backupPassword);
   },
 
+  async importCimbarPayload(data, sharePasswordSet, sharePassword) {
+    try {
+      const masterPassword = getMasterPassword();
+      return await invoke('import_cimbar_payload', {
+        data,
+        sharePasswordSet,
+        sharePassword: sharePassword || '',
+        masterPassword,
+      });
+    } catch (error) {
+      console.error('importCimbarPayload failed:', error);
+      return { success: false, message: error.message };
+    }
+  },
+
   async getExportFormats() {
     return ['json', 'csv', 'excel'];
   },

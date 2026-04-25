@@ -3,7 +3,6 @@
  */
 
 let _loadPromise = null;
-let _isScriptAppended = false;
 let _sharedCanvas = null;
 let _isLoopActive = false;
 let _renderCallbacks = new Set();
@@ -146,8 +145,7 @@ export const loadCimbarEngine = (forceRetry = false) => {
             }
         };
         window.Module.locateFile = (path) => path.endsWith('.wasm') ? CIMBAR_WASM_FILE : path;
-        if (!_isScriptAppended) {
-            _isScriptAppended = true;
+        if (!document.getElementById('cimbar-engine-singleton')) {
             const script = document.createElement('script');
             script.id = 'cimbar-engine-singleton';
             script.src = CIMBAR_JS_FILE;

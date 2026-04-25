@@ -90,6 +90,61 @@ pub fn decrypt_data(encrypted: &str, password: &str) -> Result<String, String> {
         .map_err(|e| format!("UTF-8转换失败: {}", e))
 }
 
+/// 用途: 对任意字节切片加密; 输入: 原始字节与密码; 输出: 加密后字节(salt+nonce+ciphertext); 必要性: 支持压缩后字节流的加密。
+pub fn encrypt_bytes(data: &[u8], password: &str) -> Result<Vec<u8>, String> {
+    let mut key = [0u8; 32];
+    let mut salt = [0u8; 16];
+    OsRng.fill_bytes(&mut salt);
+
+    let argon2 = Argon2::default();
+    argon2
+        .hash_password_into(password.as_bytes(), &salt, &mut key)
+        .map_err(|e| format!("密钥派生失败: {}", e))?;
+
+    let cipher = Aes256Gcm::new_from_slice(&key)
+        .map_err(|e| format!("创建密码器失败: {}", e))?;
+
+    let mut nonce_bytes = [0u8; 12];
+    OsRng.fill_bytes(&mut nonce_bytes);
+    let nonce = Nonce::from_slice(&nonce_bytes);
+
+    let ciphertext = cipher
+        .encrypt(nonce, data)
+        .map_err(|e| format!("加密失败: {}", e))?;
+
+    let mut result = Vec::with_capacity(16 + 12 + ciphertext.len());
+    result.extend_from_slice(&salt);
+    result.extend_from_slice(&nonce_bytes);
+    result.extend_from_slice(&ciphertext);
+    Ok(result)
+}
+
+/// 用途: 解密字节切片; 输入: 加密字节(salt+nonce+ciphertext)与密码; 输出: 原始字节; 必要性: 解压前需先解密。
+pub fn decrypt_bytes(data: &[u8], password: &str) -> Result<Vec<u8>, String> {
+    if data.len() < 28 {
+        return Err("数据格式错误".to_string());
+    }
+
+    let salt = &data[0..16];
+    let nonce_bytes = &data[16..28];
+    let ciphertext = &data[28..];
+
+    let mut key = [0u8; 32];
+    let argon2 = Argon2::default();
+    argon2
+        .hash_password_into(password.as_bytes(), salt, &mut key)
+        .map_err(|e| format!("密钥派生失败: {}", e))?;
+
+    let cipher = Aes256Gcm::new_from_slice(&key)
+        .map_err(|e| format!("创建密码器失败: {}", e))?;
+
+    let nonce = Nonce::from_slice(nonce_bytes);
+
+    cipher
+        .decrypt(nonce, ciphertext)
+        .map_err(|e| format!("解密失败: {}", e))
+}
+
 /// 用途: 生成随机密码; 输入: 长度和包含字符类型; 输出: 新密码字符串; 必要性: 满足前端快速生成密码需求。
 pub fn generate_random_password(
     length: usize,

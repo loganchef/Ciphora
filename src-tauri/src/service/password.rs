@@ -275,21 +275,25 @@ pub async fn prepare_cimbar_payload(
     let serialized = serde_json::to_string(&payload)
         .map_err(|e| format!("serialization_failed: {}", e))?;
 
+    let compressed = zstd::encode_all(serialized.as_bytes(), 19)
+        .map_err(|e| format!("compression_failed: {}", e))?;
+
     let trimmed_share = share_password.as_ref().map(|s| s.trim().to_string()).unwrap_or_default();
     let share_enabled = !trimmed_share.is_empty();
 
-    let encryption_key = if share_enabled {
-        trimmed_share
+    let data = if share_enabled {
+        use base64::{engine::general_purpose, Engine as _};
+        let encrypted_bytes = crypto::encrypt_bytes(&compressed, &trimmed_share)
+            .map_err(|e| format!("encryption_failed: {}", e))?;
+        general_purpose::STANDARD.encode(&encrypted_bytes)
     } else {
-        master_password
+        use base64::{engine::general_purpose, Engine as _};
+        general_purpose::STANDARD.encode(&compressed)
     };
-
-    let encrypted = crypto::encrypt_data(&serialized, &encryption_key)
-        .map_err(|e| format!("encryption_failed: {}", e))?;
 
     Ok(json!({
         "success": true,
-        "encrypted": encrypted,
+        "encrypted": data,
         "meta": {
             "count": filtered.len(),
             "sharePasswordSet": share_enabled,

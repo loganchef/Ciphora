@@ -80,6 +80,7 @@ fn main() {
             reorder_groups,
             move_passwords_to_group,
             increment_usage_count,
+            import_cimbar_payload,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

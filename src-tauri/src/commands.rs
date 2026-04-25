@@ -425,6 +425,19 @@ pub async fn increment_usage_count(
     password_service::increment_usage_count(id, master_password, app, state).await
 }
 
+/// 用途: 导入 Cimbar 传输载荷; 输入: data、share_password_set、分享密码、主密码; 输出: 导入计数; 必要性: 处理 base64 和加密两种格式。
+#[tauri::command]
+pub async fn import_cimbar_payload(
+    data: String,
+    share_password_set: bool,
+    share_password: String,
+    master_password: String,
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    import_export::import_cimbar_payload(data, share_password_set, share_password, master_password, app, state).await
+}
+
 
 
 

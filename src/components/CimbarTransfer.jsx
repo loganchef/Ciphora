@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
-import { QrCode, Lock, Maximize2, X, Check, Shield, RefreshCw, Eye, EyeOff, Search, ChevronRight, ChevronDown, ListChecks, HelpCircle, Zap, Activity } from "lucide-react";
+import { QrCode, Lock, Maximize2, X, Check, Shield, RefreshCw, Eye, EyeOff, Search, ChevronRight, ChevronDown, ListChecks, Zap, Activity, Smartphone } from "lucide-react";
 import CimbarQRCode from "./CimbarQRCode";
 import CimbarDecoder from "./CimbarDecoder";
 import { tauriAPI } from "@/api/tauri-api";

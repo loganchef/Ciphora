@@ -26,6 +26,7 @@ sha2 = "0.10"
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["clock"] }
 tauri-plugin-os = "2.3.2"
+zstd = "0.13"
 
 [target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
 tauri-plugin-window-state = "2.0.0"

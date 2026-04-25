@@ -248,6 +248,64 @@ pub async fn restore_backup(
     })
 }
 
+/// 用途: 导入 Cimbar 传输载荷; 输入: data(base64或加密串)、share_password_set、分享密码、主密码; 输出: 导入数量; 必要性: 解决 restore_backup 强制解密的问题。
+pub async fn import_cimbar_payload(
+    data: String,
+    share_password_set: bool,
+    share_password: String,
+    master_password: String,
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    use base64::{engine::general_purpose, Engine as _};
+
+    // 1. base64 解码
+    let raw_bytes = general_purpose::STANDARD
+        .decode(data.trim())
+        .map_err(|e| format!("base64_decode_failed: {}", e))?;
+
+    // 2. 可选解密（字节级别）
+    let compressed = if share_password_set {
+        crypto::decrypt_bytes(&raw_bytes, &share_password)
+            .map_err(|_| "share_password_incorrect_or_data_corrupted".to_string())?
+    } else {
+        raw_bytes
+    };
+
+    // 3. zstd 解压
+    let json_bytes = zstd::decode_all(compressed.as_slice())
+        .map_err(|e| format!("decompression_failed: {}", e))?;
+
+    let json_str = String::from_utf8(json_bytes)
+        .map_err(|e| format!("utf8_decode_failed: {}", e))?;
+
+    // 4. 解析 payload: { version, generatedAt, count, entries: [...] }
+    let parsed: serde_json::Value = serde_json::from_str(&json_str)
+        .map_err(|e| format!("payload_parse_failed: {}", e))?;
+
+    let entries_val = parsed
+        .get("entries")
+        .cloned()
+        .unwrap_or(parsed.clone());
+
+    let mut passwords: Vec<PasswordEntry> = serde_json::from_value(entries_val)
+        .map_err(|e| format!("entries_parse_failed: {}", e))?;
+
+    for entry in passwords.iter_mut() {
+        password_service::normalize_entry(entry);
+    }
+
+    let count = passwords.len();
+
+    password_service::save_passwords(passwords, master_password, app, state).await?;
+
+    Ok(serde_json::json!({
+        "success": true,
+        "message": "import_completed",
+        "importedCount": count,
+    }))
+}
+
 fn entry_key(entry: &PasswordEntry) -> String {
     let website = password_service::get_string_field(entry, "website")
         .unwrap_or_else(|| "unknown".into());
