@@ -1,6 +1,6 @@
 [package]
 name = "ciphora"
-version = "2.0.0"
+version = "2.0.1"
 description = "Ciphora - 安全密码管理器"
 authors = ["loganchef <cubo@binrc.com>"]
 license = "MIT"
@@ -8,7 +8,7 @@ repository = "https://github.com/loganchef/Ciphora"
 edition = "2021"
 
 [build-dependencies]
-tauri-build = { version = "2.0.0", features = [] }
+tauri-build = { version = "2.0.1", features = [] }
 
 [dependencies]
 tauri = { version = "2.10.0", features = [] }
