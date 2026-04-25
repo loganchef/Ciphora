@@ -70,8 +70,8 @@ export default function CimbarTransfer({ onClose, passwords = [], visible = fals
             const groupName = p.groupId ? (groupMap[p.groupId] || t('common.unknownGroup')) : t('common.unbound');
             if (!result[groupName]) result[groupName] = [];
             
-            const title = (p.title || p.website || '').toLowerCase();
-            const username = (p.username || '').toLowerCase();
+            const title = typeof (p.title || p.website) === 'string' ? (p.title || p.website || '').toLowerCase() : '';
+            const username = typeof p.username === 'string' ? p.username.toLowerCase() : '';
             const search = searchTerm.toLowerCase();
             
             if (!searchTerm || title.includes(search) || username.includes(search)) {
@@ -231,6 +231,17 @@ export default function CimbarTransfer({ onClose, passwords = [], visible = fals
                 </div>
                 
                 <div className="flex items-center gap-6">
+                    <button 
+                        onClick={() => {
+                            import('@/lib/cimbar-engine').then(m => m.loadCimbarEngine(true));
+                            setMessage(t('cimbar.restartingEngine'));
+                            setMessageType('info');
+                        }}
+                        className="p-2 hover:bg-blue-50 hover:text-blue-600 text-gray-400 rounded-xl transition-all"
+                        title={t('cimbar.restartEngine')}
+                    >
+                        <RefreshCw className="w-5 h-5" />
+                    </button>
                     <div className="bg-gray-100 p-1 rounded-xl flex items-center">
                         <button
                             onClick={() => setMode('generate')}

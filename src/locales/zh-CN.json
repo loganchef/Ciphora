@@ -224,6 +224,8 @@
     "usageGuide": "操作指南",
     "transferReady": "传输就绪 ({{count}} 项)",
     "updatingStream": "正在更新流数据...",
+    "restartEngine": "重启渲染引擎",
+    "restartingEngine": "正在重启引擎...",
     "generateError": "二维码生成失败",
     "ready": "二维码已就绪",
     "decodeError": "解码失败",

@@ -256,7 +256,7 @@ const PasswordCard = ({ password, onEdit, onDelete, className = "", hideSensitiv
                     )}
 
                     {/* Username section - only show if username exists */}
-                    {password.username && password.username.trim() && (
+                    {password.username && (typeof password.username === 'string' ? password.username.trim() : String(password.username || '')) && (
                         <div className="space-y-3">
                             <div className="flex items-center gap-2 text-sm text-gray-600">
                                 <UserIcon className="w-4 h-4" />

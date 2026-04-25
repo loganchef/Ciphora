@@ -25,12 +25,14 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
         });
     });
 
-    const filteredPasswords = filteredByGroup.filter(password =>
-        (password.website?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (password.username?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (password.description?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (password.type?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-    );
+    const sq = searchQuery.toLowerCase();
+    const filteredPasswords = filteredByGroup.filter(password => {
+        const str = (v) => (typeof v === 'string' ? v : String(v ?? '')).toLowerCase();
+        return str(password.website).includes(sq) ||
+            str(password.username).includes(sq) ||
+            str(password.description).includes(sq) ||
+            str(password.type).includes(sq);
+    });
 
     // 排序逻辑
     const sortedPasswords = useMemo(() => {
@@ -43,8 +45,11 @@ const MainVault = ({ passwords = [], isLoading = false, onAddPassword, onEditPas
                     return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
                 case 'updatedAt':
                     return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
-                case 'username':
-                    return (a.username || '').localeCompare(b.username || '');
+                case 'username': {
+                    const au = typeof a.username === 'string' ? a.username : String(a.username ?? '');
+                    const bu = typeof b.username === 'string' ? b.username : String(b.username ?? '');
+                    return au.localeCompare(bu);
+                }
                 default:
                     return 0;
             }

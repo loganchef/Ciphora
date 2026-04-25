@@ -221,11 +221,17 @@ export const tauriAPI = {
       }
 
       // 清理空字符串字段，避免后端保留无意义的空值
+      // 同时确保关键字段是字符串类型（XLSX 会将纯数字字符串解析为数字）
       data = data.map(entry => {
         const cleaned = {};
         for (const [key, value] of Object.entries(entry)) {
           if (value !== '' && value !== null && value !== undefined) {
-            cleaned[key] = value;
+            // 将关键字段强制转换为字符串，避免 XLSX 自动类型转换导致的问题
+            if (['website', 'username', 'url', 'notes', 'description'].includes(key)) {
+              cleaned[key] = String(value);
+            } else {
+              cleaned[key] = value;
+            }
           }
         }
         return cleaned;

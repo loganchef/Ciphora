@@ -7,125 +7,129 @@ let _isScriptAppended = false;
 let _sharedCanvas = null;
 let _isLoopActive = false;
 let _renderCallbacks = new Set();
+let _cachedGL = null;
+let _engineFullyReady = false;
+let _lastFrameTime = 0;
+
+const FRAME_INTERVAL = 80; // 约 12.5 FPS
 
 const CIMBAR_JS_FILE = '/wasm/cimbar.js';
 const CIMBAR_WASM_FILE = '/wasm/cimbar.wasm';
 
 function getSharedCanvas() {
     if (typeof document === 'undefined') return null;
-    if (!_sharedCanvas) {
-        // Reuse existing element if hot-reload left one behind
-        _sharedCanvas = document.getElementById('cimbar-persistent-buffer');
+    let canvas = document.getElementById('canvas');
+    if (!canvas) {
+        canvas = document.createElement('canvas');
+        canvas.id = 'canvas';
+        canvas.width = 488;
+        canvas.height = 488;
+        canvas.style.cssText = 'position:fixed;left:0;top:0;width:488px;height:488px;pointer-events:none;z-index:-9999;opacity:0.01;display:block;';
+        
+        const originalGetContext = canvas.getContext;
+        canvas.getContext = function(type, attributes) {
+            if (type.includes('webgl')) {
+                if (_cachedGL) return _cachedGL;
+                attributes = attributes || {};
+                attributes.preserveDrawingBuffer = true;
+                attributes.alpha = false;
+                _cachedGL = originalGetContext.call(this, type, attributes);
+                return _cachedGL;
+            }
+            return originalGetContext.call(this, type, attributes);
+        };
+        document.body.appendChild(canvas);
     }
-    if (!_sharedCanvas) {
-        _sharedCanvas = document.createElement('canvas');
-        _sharedCanvas.id = 'cimbar-persistent-buffer';
-        _sharedCanvas.width = 488;
-        _sharedCanvas.height = 488;
-        // Must be in DOM for WebGL context creation to succeed in WebView
-        _sharedCanvas.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:488px;height:488px;pointer-events:none;z-index:-9999;visibility:visible;';
-        document.body.appendChild(_sharedCanvas);
-    }
-    return _sharedCanvas;
+    _sharedCanvas = canvas;
+    return canvas;
 }
 
-let _lastTick = 0;
+// 辅助函数：安全启动循环
+function startLoopIfNeeded() {
+    if (!_isLoopActive && _engineFullyReady && _renderCallbacks.size > 0) {
+        console.log('🚀 Starting/Resuming Cimbar render loop');
+        _isLoopActive = true;
+        _lastFrameTime = 0;
+        requestAnimationFrame(tick);
+    }
+}
+
 function tick(now) {
-    if (_renderCallbacks.size === 0) {
+    if (_renderCallbacks.size === 0 || !_engineFullyReady) {
+        console.log('🛑 Loop paused: ', { callbacks: _renderCallbacks.size, ready: _engineFullyReady });
         _isLoopActive = false;
         return;
     }
 
-    // Limit to ~20fps for power safety
-    if (now - _lastTick >= 50) {
-        _lastTick = now;
-        // Only render if engine is fully ready
-        if (window.Module && typeof window.Module._cimbare_render === 'function') {
+    if (now - _lastFrameTime >= FRAME_INTERVAL) {
+        _lastFrameTime = now;
+        const M = window.Module;
+        const canvas = getSharedCanvas();
+        
+        if (M && typeof M._cimbare_render === 'function') {
             try {
-                if (window.Module.canvas !== _sharedCanvas) {
-                    window.Module.canvas = _sharedCanvas;
+                // 强制每一帧都同步引用，防止 WASM 内部丢失目标
+                if (M.canvas !== canvas) M.canvas = canvas;
+
+                M._cimbare_render();
+
+                _renderCallbacks.forEach(cb => { try { cb(canvas); } catch(e) {} });
+
+                if (typeof M._cimbare_next_frame === 'function') {
+                    M._cimbare_next_frame();
                 }
-                window.Module._cimbare_render();
-                window.Module._cimbare_next_frame();
-                _renderCallbacks.forEach(cb => {
-                    try { cb(_sharedCanvas); } catch(e) {}
-                });
             } catch (e) {
-                console.error('Cimbar Tick Crash:', e);
+                console.warn('Cimbar Tick skipped:', e.message);
             }
         }
     }
-
     requestAnimationFrame(tick);
 }
 
 export const loadCimbarEngine = (forceRetry = false) => {
     if (typeof window === 'undefined') return Promise.reject(new Error('Browser required'));
+    
+    if (forceRetry) {
+        console.log('♻️ Resetting Engine...');
+        _engineFullyReady = false;
+        _loadPromise = null;
+        _cachedGL = null;
+        window.dispatchEvent(new CustomEvent('cimbar-force-reset'));
+        
+        if (window.Module && window.Module._cimbare_init_encode) {
+            _engineFullyReady = true;
+            startLoopIfNeeded();
+            return Promise.resolve(window.Module);
+        }
+    }
 
     if (_loadPromise && !forceRetry) return _loadPromise;
 
-    if (forceRetry) {
-        console.log('♻️ Resetting Cimbar Singleton');
-        _loadPromise = null;
-        _isScriptAppended = false;
-        window.Module = null;
-        const old = document.getElementById('cimbar-engine-singleton');
-        if (old) old.remove();
-    }
-
-    // Detect stale Module: functions exist but WebGL ctx is gone (HMR scenario)
-    if (window.Module && window.Module._cimbare_encode_bufsize && !window.Module.ctx) {
-        console.warn('⚠️ Stale Module detected (no WebGL ctx), forcing reset...');
-        window.Module = null;
-        _isScriptAppended = false;
-        _loadPromise = null;
-        const old = document.getElementById('cimbar-engine-singleton');
-        if (old) old.remove();
-    }
-
-    if (_loadPromise) return _loadPromise;
-
     _loadPromise = new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
-            _loadPromise = null;
-            reject(new Error('初始化超时，请尝试刷新页面'));
+            if (_loadPromise) {
+                _loadPromise = null;
+                reject(new Error('加载超时'));
+            }
         }, 15000);
 
-        const sharedCanvas = getSharedCanvas();
+        const canvas = getSharedCanvas();
         window.Module = window.Module || {};
-        window.Module.canvas = sharedCanvas;
-        window.Module.locateFile = (path) => path.endsWith('.wasm') ? CIMBAR_WASM_FILE : path;
-        const onDone = () => {
+        window.Module.canvas = canvas;
+        
+        window.Module.onRuntimeInitialized = () => {
             clearTimeout(timeout);
+            if (typeof window.Module._cimbare_configure === 'function') {
+                window.Module._cimbare_configure(488, 488);
+            }
             if (window.Module._cimbare_init_encode) {
-                const ratio = window.Module._cimbare_get_aspect_ratio() || 1;
-                _sharedCanvas.width = ratio > 1 ? Math.round(488 * ratio) : 488;
-                _sharedCanvas.height = ratio > 1 ? 488 : Math.round(488 / ratio);
-                console.log('✅ Cimbar engine ready, canvas:', _sharedCanvas.width, 'x', _sharedCanvas.height, 'ctx:', !!window.Module.ctx);
-                if (!_isLoopActive && _renderCallbacks.size > 0) {
-                    _isLoopActive = true;
-                    requestAnimationFrame(tick);
-                }
+                _engineFullyReady = true;
+                startLoopIfNeeded();
                 resolve(window.Module);
-            } else {
-                _loadPromise = null;
-                reject(new Error('WASM 模块异常'));
             }
         };
 
-        console.log('🔧 loadCimbarEngine: calledRun=', window.Module.calledRun, 'ctx=', !!window.Module.ctx, '_cimbare_init_encode=', !!window.Module._cimbare_init_encode);
-
-        if (window.Module._cimbare_init_encode) {
-            onDone();
-            return;
-        }
-
-        if (window.Module.calledRun && window.Module.ctx) {
-            onDone();
-            return;
-        }
-
-        window.Module.onRuntimeInitialized = onDone;
+        window.Module.locateFile = (path) => path.endsWith('.wasm') ? CIMBAR_WASM_FILE : path;
 
         if (!_isScriptAppended) {
             _isScriptAppended = true;
@@ -133,19 +137,9 @@ export const loadCimbarEngine = (forceRetry = false) => {
             script.id = 'cimbar-engine-singleton';
             script.src = CIMBAR_JS_FILE;
             script.async = true;
-            script.onerror = () => {
-                _isScriptAppended = false;
-                _loadPromise = null;
-                reject(new Error('脚本下载失败'));
-            };
             document.head.appendChild(script);
-        } else {
-            const check = setInterval(() => {
-                if (window.Module && window.Module._cimbare_init_encode) {
-                    clearInterval(check);
-                    onDone();
-                }
-            }, 100);
+        } else if (window.Module._cimbare_init_encode) {
+            window.Module.onRuntimeInitialized();
         }
     });
 
@@ -153,26 +147,9 @@ export const loadCimbarEngine = (forceRetry = false) => {
 };
 
 export const subscribeToCimbarRender = (callback) => {
-    console.log('🔌 New viewer subscribed to Cimbar stream');
     _renderCallbacks.add(callback);
-    
-    // Immediately trigger if shared buffer already has content
-    if (_sharedCanvas) callback(_sharedCanvas);
-
-    if (!_isLoopActive) {
-        console.log('🚀 Starting Cimbar render loop');
-        _isLoopActive = true;
-        requestAnimationFrame(tick);
-    }
-    
-    return () => {
-        _renderCallbacks.delete(callback);
-    };
-};
-
-export const resetCimbarEngine = () => {
-    _loadPromise = null;
-    _isScriptAppended = false;
-    _isLoopActive = false;
-    _renderCallbacks.clear();
+    const canvas = getSharedCanvas();
+    if (canvas) { try { callback(canvas); } catch(e) {} }
+    startLoopIfNeeded();
+    return () => { _renderCallbacks.delete(callback); };
 };

@@ -12,7 +12,7 @@
     "app": {
         "windows": [
             {
-                "title": "Ciphora - 密码管理器",
+                "title": "Ciphora",
                 "width": 1200,
                 "height": 800,
                 "minWidth": 800,

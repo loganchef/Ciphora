@@ -220,6 +220,8 @@
     "usageGuide": "Usage Guide",
     "transferReady": "Transfer Ready ({{count}} items)",
     "updatingStream": "Updating stream data...",
+    "restartEngine": "Restart Render Engine",
+    "restartingEngine": "Restarting engine...",
     "generateError": "QR code generation failed",
     "ready": "QR code ready",
     "decodeError": "Decoding failed",
