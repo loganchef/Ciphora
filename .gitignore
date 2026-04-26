@@ -57,4 +57,3 @@ Pods/
 /target
 **/*.rs.bk
 Cargo.lock
-public/icons/
