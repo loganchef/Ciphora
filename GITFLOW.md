@@ -1,180 +1,63 @@
-# Git Flow 工作流程
+# Git 工作流程 (Git Flow)
 
 ## 概述
 
-本项目使用 Git Flow 工作流程进行版本管理和发布。当推送 tag 时，GitHub Actions 会自动构建多平台应用并发布到 Releases。
+Ciphora 采用基于 `v2` (main) 分支的简化 Git Flow 流程。当推送版本 Tag 时，GitHub Actions 会自动触发云端构建并将安装包发布到 Releases。
 
 ## 分支结构
 
-```
-main (主分支)
-├── develop (开发分支)
-├── feature/* (功能分支)
-├── release/* (发布分支)
-└── hotfix/* (热修复分支)
-```
+- **v2 (main)**: 生产环境分支。所有发布代码必须合并至此。
+- **feature/*** : 新功能开发分支。
+- **hotfix/*** : 紧急修复分支。
 
-## 工作流程
+## 开发与发布流程
 
-### 1. 开发新功能
+### 1. 功能开发
 
 ```bash
-# 从 develop 分支创建功能分支
-git checkout develop
-git pull origin develop
-git checkout -b feature/新功能名称
+# 从 v2 创建特性分支
+git checkout v2
+git pull origin v2
+git checkout -b feature/your-feature
 
-# 开发完成后提交
-git add .
-git commit -m "feat: 添加新功能"
-
-# 推送到远程
-git push origin feature/新功能名称
-
-# 创建 Pull Request 合并到 develop
+# 开发完成后合并
+git checkout v2
+git merge feature/your-feature
 ```
 
-### 2. 准备发布
+### 2. 执行全自动发布
+
+我们提供了一个强大的发布脚本 `scripts/release.sh`，它可以自动同步所有配置文件的版本号并打上 Git Tag。
 
 ```bash
-# 从 develop 分支创建发布分支
-git checkout develop
-git pull origin develop
-git checkout -b release/v1.2.0
-
-# 更新版本号和文档
-# 提交发布准备
-git add .
-git commit -m "chore: 准备发布 v1.2.0"
-
-# 推送到远程
-git push origin release/v1.2.0
-
-# 创建 Pull Request 合并到 main
+# 示例：发布 v2.0.12
+./scripts/release.sh 2.0.12
 ```
 
-### 3. 发布版本
+### 3. 推送至云端构建
+
+脚本执行完成后，只需将代码和标签推送到 GitHub，CI 就会自动开始工作。
 
 ```bash
-# 合并到 main 后，创建 tag
-git checkout main
-git pull origin main
-git tag -a v1.2.0 -m "发布版本 v1.2.0"
-git push origin v1.2.0
-
-# GitHub Actions 会自动触发构建和发布
+# 推送当前分支和最新生成的 Tag
+git push origin v2 --tags
+git push github v2 --tags
 ```
 
-### 4. 热修复
+## 云端构建产物 (GitHub Actions)
 
-```bash
-# 从 main 分支创建热修复分支
-git checkout main
-git pull origin main
-git checkout -b hotfix/紧急修复
+成功推送 Tag 后，系统会自动生成以下安装包：
+- **Windows**: `.exe` (NSIS), `.msi`
+- **Android**: `.apk` (ARM64, x86_64 等)
+- **macOS**: `.dmg` (Universal)
+- **Linux**: `.AppImage`, `.deb`
 
-# 修复完成后提交
-git add .
-git commit -m "fix: 紧急修复问题"
+## 版本号规范
 
-# 推送到远程
-git push origin hotfix/紧急修复
+遵循 [语义化版本 (SemVer)](https://semver.org/lang/zh-CN/):
+- **X.0.0**: 架构调整或重大更新。
+- **0.X.0**: 功能新增。
+- **0.0.X**: 问题修复或文档优化。
 
-# 创建 Pull Request 合并到 main 和 develop
-```
-
-## 构建脚本
-
-### 本地构建
-
-```bash
-# 构建所有平台
-npm run build:all
-
-# 构建特定平台
-npm run build:win        # Windows
-npm run build:win:32     # Windows 32位
-npm run build:win:64     # Windows 64位
-npm run build:mac        # macOS
-npm run build:mac:arm64  # macOS ARM64
-npm run build:mac:x64    # macOS x64
-npm run build:linux      # Linux
-npm run build:linux:32   # Linux 32位
-npm run build:linux:64   # Linux 64位
-
-# 发布构建
-npm run release          # 所有平台
-npm run release:win      # 仅 Windows
-npm run release:mac      # 仅 macOS
-npm run release:linux    # 仅 Linux
-```
-
-### 自动构建
-
-当推送 tag 时，GitHub Actions 会自动：
-
-1. **构建多平台应用**
-   - Windows (x64, ia32) - NSIS 安装包
-   - Linux (x64, ia32) - AppImage
-   - macOS (x64, arm64) - DMG
-
-2. **创建 Release**
-   - 自动生成发布说明
-   - 上传所有构建产物
-   - 标记为正式版本
-
-## 版本命名规范
-
-- **主版本号**：不兼容的 API 修改
-- **次版本号**：向下兼容的功能性新增
-- **修订号**：向下兼容的问题修正
-
-示例：`v1.2.3`
-
-## 提交信息规范
-
-```
-feat: 新功能
-fix: 修复问题
-docs: 文档更新
-style: 代码格式调整
-refactor: 代码重构
-test: 测试相关
-chore: 构建过程或辅助工具的变动
-```
-
-## 注意事项
-
-1. **develop 分支**：日常开发的主要分支
-2. **main 分支**：只包含发布版本，不要直接提交
-3. **tag 命名**：必须使用 `v*` 格式才能触发自动构建
-4. **分支保护**：main 和 develop 分支应该设置保护规则
-5. **代码审查**：所有合并都应该通过 Pull Request 和代码审查
-
-## 快速发布流程
-
-```bash
-# 1. 确保 develop 分支是最新的
-git checkout develop
-git pull origin develop
-
-# 2. 创建发布分支
-git checkout -b release/v1.2.0
-
-# 3. 更新版本号（如果需要）
-# 4. 提交发布准备
-git add .
-git commit -m "chore: 准备发布 v1.2.0"
-
-# 5. 推送到远程
-git push origin release/v1.2.0
-
-# 6. 创建 PR 合并到 main
-# 7. 合并后创建 tag
-git checkout main
-git pull origin main
-git tag -a v1.2.0 -m "发布版本 v1.2.0"
-git push origin v1.2.0
-
-# 8. 自动构建和发布完成！
-``` 
+---
+**Made with ❤️ by loganchef**

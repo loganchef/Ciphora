@@ -6,60 +6,53 @@
 
 ### 报告 Bug
 
-如果您发现了 Bug，请通过以下方式报告：
-
-- 在 [Issues](https://github.com/loganchef/Ciphora/issues) 页面创建新的 Issue
-- 详细描述问题现象和复现步骤
-- 提供您的操作系统和 Ciphora 版本信息
-
-### 功能建议
-
-如果您有新功能建议，请：
-
-- 在 [Issues](https://github.com/loganchef/Ciphora/issues) 页面创建 Feature Request
-- 详细描述功能需求和预期效果
-- 讨论实现方案和优先级
+如果您发现了 Bug，请通过 [GitHub Issues](https://github.com/loganchef/Ciphora/issues) 报告，并提供尽可能详细的复现步骤和环境信息（操作系统、Ciphora 版本）。
 
 ### 代码贡献
 
-如果您想贡献代码：
-
-1. Fork 本仓库
-2. 创建您的特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交您的更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 打开一个 Pull Request
+1. Fork 本仓库。
+2. 基于 `v2` 分支创建您的特性分支 (`git checkout -b feature/AmazingFeature`)。
+3. 提交您的更改并确保遵循 [提交规范](#提交规范)。
+4. 推送到您的 Fork 仓库并开启一个 Pull Request。
 
 ## 开发环境设置
 
+Ciphora 基于 **Tauri 2.0 (Rust)** 和 **React (Vite)** 构建。
+
 ```bash
-# 克隆仓库
+# 1. 克隆仓库
 git clone https://github.com/loganchef/Ciphora.git
 cd Ciphora
 
-# 安装依赖
-yarn install
+# 2. 安装 Node.js 依赖
+npm install
 
-# 启动开发服务器
-yarn dev
+# 3. 运行开发模式 (桌面端)
+npm run tauri:dev
 
-# 运行 Electron 开发模式
-yarn electron:dev
+# 4. 运行 Android 模式 (需要 Android Studio 环境)
+npm run tauri:android:dev
 ```
 
-## 代码规范
+*注意：环境准备请参考 [Tauri 官方先决条件指南](https://tauri.app/start/prerequisites/)*。
 
-- 使用 ESLint 和 Prettier 保持代码风格一致
-- 遵循现有的代码结构和命名约定
-- 为新功能添加适当的测试
-- 更新相关文档
+## 提交规范
 
-## 联系我们
+我们遵循约定式提交 (Conventional Commits) 规范：
 
-- **组织**: [loganchef](https://github.com/loganchef)
-- **邮箱**: [cubo@binrc.com](mailto:cubo@binrc.com)
-- **项目地址**: [https://github.com/loganchef/Ciphora](https://github.com/loganchef/Ciphora)
+- `feat:` 新功能
+- `fix:` 修复问题
+- `docs:` 文档更新
+- `style:` 代码格式调整（不影响逻辑）
+- `refactor:` 代码重构
+- `perf:` 性能优化
+- `chore:` 构建过程或辅助工具的变动
 
-## 许可证
+## 代码风格
 
-通过贡献代码，您同意您的贡献将在 MIT 许可证下发布。
+- 后端：遵循 `cargo fmt`。
+- 前端：使用 ESLint 和 Prettier 保持一致性。
+- 命名：前端采用驼峰式 (`camelCase`)，后端采用蛇形式 (`snake_case`)。
+
+---
+**Made with ❤️ by loganchef**
