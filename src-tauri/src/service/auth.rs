@@ -68,3 +68,18 @@ pub fn logout(state: State<'_, AppState>) -> Result<(), String> {
     Ok(())
 }
 
+/// 用途: 彻底重置初始化状态; 输入: AppHandle 和全局状态; 输出: (); 必要性: 用于忘记密码时的系统重置。
+pub async fn reset_initialization_status(
+    app: &tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    // 1. 删除磁盘文件
+    state_dao::wipe_state(app).await?;
+
+    // 2. 清除内存状态
+    *state.master_password_hash.lock().unwrap() = None;
+    *state.is_authenticated.lock().unwrap() = false;
+
+    Ok(())
+}
+

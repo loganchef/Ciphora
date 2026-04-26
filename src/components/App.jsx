@@ -30,7 +30,8 @@ const App = () => {
     const [pendingExportData, setPendingExportData] = useState(null);
     const [showImportPreview, setShowImportPreview] = useState(false);
     const [importPreviewData, setImportPreviewData] = useState(null);
-    const [autoLockTimer, setAutoLockTimer] = useState(null);
+    const autoLockTimerRef = React.useRef(null);
+    const lastActivityRef = React.useRef(Date.now());
     const [settings, setSettings] = useState(null);
     const [showCimbar, setShowCimbar] = useState(false);
     const { isMobile } = useMobile();
@@ -94,44 +95,50 @@ const App = () => {
     // 自动锁定功能
     useEffect(() => {
         if (!isAuthenticated || !settings?.autoLock?.enabled) {
+            if (autoLockTimerRef.current) {
+                clearTimeout(autoLockTimerRef.current);
+                autoLockTimerRef.current = null;
+            }
             return;
         }
-
-        let currentTimer = null;
-
-        const resetAutoLockTimer = () => {
-            // 清除现有定时器
-            if (currentTimer) {
-                clearTimeout(currentTimer);
-            }
-
-            // 设置新的定时器
-            const timeout = settings.autoLock.timeout;
-            if (timeout > 0) {
-                currentTimer = setTimeout(() => {
-                    handleAutoLock();
-                }, timeout);
-                setAutoLockTimer(currentTimer);
-            }
-        };
 
         const handleAutoLock = () => {
             setIsAuthenticated(false);
             setCurrentView('login');
             setPasswords([]);
-            setAutoLockTimer(null);
+            autoLockTimerRef.current = null;
+        };
+
+        const resetAutoLockTimer = () => {
+            // 清除现有定时器
+            if (autoLockTimerRef.current) {
+                clearTimeout(autoLockTimerRef.current);
+            }
+
+            // 设置新的定时器
+            const timeout = settings.autoLock.timeout;
+            if (timeout > 0) {
+                autoLockTimerRef.current = setTimeout(() => {
+                    handleAutoLock();
+                }, timeout);
+            }
         };
 
         // 监听用户活动
-        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
 
         const handleUserActivity = () => {
-            resetAutoLockTimer();
+            const now = Date.now();
+            // 节流处理：每 500ms 才重置一次定时器，避免过于频繁的操作
+            if (now - lastActivityRef.current > 500) {
+                lastActivityRef.current = now;
+                resetAutoLockTimer();
+            }
         };
 
-        // 添加事件监听器
+        // 添加事件监听器 - 注意：这里不再使用 capture 模式，避免干扰子组件
         events.forEach(event => {
-            document.addEventListener(event, handleUserActivity, true);
+            document.addEventListener(event, handleUserActivity);
         });
 
         // 初始化定时器
@@ -140,10 +147,11 @@ const App = () => {
         // 清理函数
         return () => {
             events.forEach(event => {
-                document.removeEventListener(event, handleUserActivity, true);
+                document.removeEventListener(event, handleUserActivity);
             });
-            if (currentTimer) {
-                clearTimeout(currentTimer);
+            if (autoLockTimerRef.current) {
+                clearTimeout(autoLockTimerRef.current);
+                autoLockTimerRef.current = null;
             }
         };
     }, [isAuthenticated, settings?.autoLock?.enabled, settings?.autoLock?.timeout]);

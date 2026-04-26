@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import {
   readTextFile,
@@ -8,6 +8,27 @@ import {
 } from '@tauri-apps/plugin-fs';
 import { open as openUrl } from '@tauri-apps/plugin-shell';
 import * as XLSX from 'xlsx/dist/xlsx.full.min.js';
+
+// 检测是否在 Tauri 环境中
+const isTauri = typeof window !== 'undefined' && window.__TAURI_INTERNALS__;
+
+// 安全的 invoke 调用
+const invoke = async (command, args = {}) => {
+  if (!isTauri) {
+    console.warn(`[Browser Mode] Mocking Tauri command: ${command}`, args);
+    // 模拟一些基础返回，防止页面崩溃
+    if (command === 'check_setup_status') return { isInitialized: true, success: true };
+    if (command === 'generate_password') {
+      const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+      return Array.from({length: args.length || 16}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    }
+    if (command === 'get_settings') return { success: true, settings: {} };
+    if (command === 'get_groups') return [];
+    if (command === 'load_passwords') return [];
+    return null;
+  }
+  return await tauriInvoke(command, args);
+};
 
 const getMasterPassword = () => {
   if (typeof window === 'undefined') {
@@ -644,11 +665,20 @@ export const tauriAPI = {
       return { success: false, message: '确认文本不匹配' };
     }
     try {
-      const masterPassword = getMasterPassword();
-      await invoke('clear_passwords', { masterPassword });
-      return { success: true, message: '数据已清空' };
+      // 调用后端的全量重置命令，彻底删除主密码哈希
+      await invoke('full_reset');
+      
+      if (typeof window !== 'undefined') {
+        window.__masterPassword = '';
+        localStorage.clear();
+        // 强制刷新应用，App.jsx 重新初始化时会发现未设置主密码，从而进入 SetupView
+        window.location.reload();
+      }
+      
+      return { success: true, message: '应用已重置' };
     } catch (error) {
-      return { success: false, message: error.message };
+      console.error('重置失败:', error);
+      return { success: false, message: error.message || '重置失败' };
     }
   },
 

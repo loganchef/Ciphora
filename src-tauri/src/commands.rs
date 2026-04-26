@@ -57,6 +57,17 @@ pub async fn check_setup_status(
     auth::check_setup_status(&app, state).await
 }
 
+/// 用途: 彻底重置应用（删除主密码和所有设置）; 输入: AppHandle, 状态; 输出: (); 必要性: 用于忘记密码时的重置。
+#[tauri::command]
+pub async fn full_reset(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>
+) -> Result<(), String> {
+    auth::reset_initialization_status(&app, state).await?;
+    settings_service::reset_settings(app, state).await?;
+    Ok(())
+}
+
 /// 用途: 注销当前用户; 输入: 状态; 输出: (); 必要性: 安全退出。
 #[tauri::command]
 pub async fn logout(state: State<'_, AppState>) -> Result<(), String> {
