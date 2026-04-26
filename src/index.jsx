@@ -8,6 +8,16 @@ import i18n from './i18n';
 // 添加一些调试信息
 console.log('React app starting...');
 
+// 修复在部分系统下无法删除字符的问题
+window.addEventListener('keydown', (e) => {
+    const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable;
+    if (isInput && (e.key === 'Backspace' || e.key === 'Delete')) {
+        // 强制停止冒泡和同级监听器，确保事件留在输入框内
+        e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    }
+}, true); // 使用捕获阶段优先处理
+
 const renderApp = async () => {
     // 尝试获取系统语言并初始化 i18n
     try {

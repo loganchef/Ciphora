@@ -40,6 +40,13 @@ pub fn run() {
             verify_master_password,
             check_setup_status,
             logout,
+            full_reset,
+            
+            // 空间管理
+            list_spaces,
+            get_current_space,
+            restore_space,
+            delete_space,
             
             // 密码管理
             save_passwords,

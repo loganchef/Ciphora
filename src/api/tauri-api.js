@@ -401,6 +401,48 @@ export const tauriAPI = {
     }
   },
 
+  // ==================== 空间管理相关 ====================
+  async listSpaces() {
+    try {
+      return await invoke('list_spaces');
+    } catch (error) {
+      console.error('获取历史空间失败:', error);
+      return [];
+    }
+  },
+
+  async getCurrentSpace() {
+    try {
+      return await invoke('get_current_space');
+    } catch (error) {
+      console.error('获取当前空间失败:', error);
+      return 'default';
+    }
+  },
+
+  async restoreSpace(archiveName) {
+    try {
+      await invoke('restore_space', { archiveName });
+      if (typeof window !== 'undefined') {
+        window.location.reload();
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('还原历史空间失败:', error);
+      return { success: false, message: error.message };
+    }
+  },
+
+  async deleteSpace(archiveName) {
+    try {
+      await invoke('delete_space', { archiveName });
+      return { success: true };
+    } catch (error) {
+      console.error('删除历史空间失败:', error);
+      return { success: false, message: error.message };
+    }
+  },
+
   // ==================== 工具功能 ====================
   async generatePassword(options = {}) {
     return await invoke('generate_password', {

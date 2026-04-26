@@ -36,14 +36,3 @@ pub async fn save_master_hash(app: &AppHandle, hash: &str) -> Result<(), String>
     fs::write(file_path, hash)
         .map_err(|e| format!("写入主密码哈希失败: {}", e))
 }
-
-/// 用途: 物理删除主密码哈希文件; 输入: AppHandle; 输出: (); 必要性: 用于忘记密码时的重置操作。
-pub async fn wipe_state(app: &AppHandle) -> Result<(), String> {
-    let dir = storage::get_app_data_dir(app).await?;
-    let file_path = dir.join(MASTER_KEY_FILE);
-
-    if file_path.exists() {
-        fs::remove_file(file_path).map_err(|e| format!("删除主密码文件失败: {}", e))?;
-    }
-    Ok(())
-}

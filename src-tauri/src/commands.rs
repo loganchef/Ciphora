@@ -63,9 +63,40 @@ pub async fn full_reset(
     app: tauri::AppHandle,
     state: State<'_, AppState>
 ) -> Result<(), String> {
-    auth::reset_initialization_status(&app, state).await?;
+    auth::reset_initialization_status(&app, &state).await?;
     settings_service::reset_settings(app, state).await?;
     Ok(())
+}
+
+/// 获取所有历史空间列表
+#[tauri::command]
+pub async fn list_spaces(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    crate::dao::storage::list_archived_spaces(&app).await
+}
+
+/// 获取当前空间名称
+#[tauri::command]
+pub async fn get_current_space(app: tauri::AppHandle) -> Result<String, String> {
+    Ok(crate::dao::storage::get_current_space_name(&app).await)
+}
+
+/// 还原指定的历史空间; 输入: 空间名称; 输出: (); 必要性: 用于找回旧密码数据。
+#[tauri::command]
+pub async fn restore_space(
+    app: tauri::AppHandle,
+    archive_name: String,
+    state: State<'_, AppState>
+) -> Result<(), String> {
+    crate::dao::storage::restore_archived_space(&app, &archive_name).await?;
+    // 还原后强制从磁盘重新加载所有状态到内存
+    crate::service::app_state::reload(&app, state.inner()).await?;
+    Ok(())
+}
+
+/// 用途: 彻底删除历史空间
+#[tauri::command]
+pub async fn delete_space(app: tauri::AppHandle, archive_name: String) -> Result<(), String> {
+    crate::dao::storage::delete_archived_space(&app, &archive_name).await
 }
 
 /// 用途: 注销当前用户; 输入: 状态; 输出: (); 必要性: 安全退出。
