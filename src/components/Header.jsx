@@ -32,7 +32,7 @@ const Header = ({ onLogout, currentView = 'main', onViewChange }) => {
                         {/* Left side - Logo and Back button */}
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-3">
-                                <img src="../res/logo.png" alt="Ciphora" className="w-10 h-10 rounded-lg" />
+                                <img src="/res/logo.png" alt="Ciphora" className="w-10 h-10 rounded-lg" />
                                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ciphora</h1>
                             </div>
                         </div>
