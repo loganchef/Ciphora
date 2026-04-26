@@ -144,8 +144,8 @@ jobs:
       - name: Initialize Tauri Android project
         run: npm run tauri:android:init
 
-      - name: Build Android APK (debug)
-        run: npm run tauri:android:build -- --apk true
+      - name: Build Android APK
+        run: npm run tauri:android:build -- --apk
         env:
           NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 
@@ -154,13 +154,13 @@ jobs:
         with:
           name: android-apk-${{ github.ref_name }}
           path: |
-            src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
+            src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           retention-days: 30
 
       - name: Upload Android APK to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
+          files: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

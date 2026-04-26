@@ -794,7 +794,7 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                                 <span>{t('settings.donation.sponsor')}</span>
                             </a>
                             <div className="text-center pt-1 border-t border-gray-50 mt-2">
-                                <p className="text-[10px] text-gray-400 font-medium">Ciphora v2.0.5 | MIT License</p>
+                                <p className="text-[10px] text-gray-400 font-medium">Ciphora v2.0.6 | MIT License</p>
                             </div>
                         </div>
                     </div>
