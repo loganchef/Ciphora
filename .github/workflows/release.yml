@@ -145,7 +145,7 @@ jobs:
         run: npm run tauri:android:init
 
       - name: Build Android APK
-        run: npm run tauri:android:build -- --apk
+        run: npm run tauri:android:build -- --apk true
         env:
           NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 

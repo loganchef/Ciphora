@@ -1,6 +1,6 @@
 {
   "name": "ciphora",
-  "version": "2.0.10",  "type": "module",
+  "version": "2.0.11",  "type": "module",
   "description": "Ciphora - 安全密码管理器，支持MFA、Base64数据存储和加密备份",
   "scripts": {
     "dev": "vite",

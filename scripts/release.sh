@@ -1,73 +1,57 @@
 #!/bin/bash
 
-# Ciphora 发布脚本
-# 使用方法: ./scripts/release.sh <版本号>
-# 示例: ./scripts/release.sh 1.2.0
+# Ciphora 全自动发布脚本
+# 使用方法: ./scripts/release.sh <新版本号>
+# 示例: ./scripts/release.sh 2.0.11
 
 set -e
 
-# 检查参数
 if [ $# -eq 0 ]; then
-    echo "错误: 请提供版本号"
-    echo "使用方法: $0 <版本号>"
-    echo "示例: $0 1.2.0"
+    echo "❌ 错误: 请提供版本号"
+    echo "用法: $0 <版本号>"
     exit 1
 fi
 
 VERSION=$1
 TAG="v$VERSION"
-RELEASE_BRANCH="release/$TAG"
-
-echo "🚀 开始发布 Ciphora $VERSION"
-
-# 检查当前分支
 CURRENT_BRANCH=$(git branch --show-current)
-if [ "$CURRENT_BRANCH" != "develop" ]; then
-    echo "❌ 错误: 请在 develop 分支上运行此脚本"
-    echo "当前分支: $CURRENT_BRANCH"
-    exit 1
-fi
 
-# 检查工作目录是否干净
+echo "🚀 开始准备发布 Ciphora $TAG (当前分支: $CURRENT_BRANCH)"
+
+# 检查工作区
 if [ -n "$(git status --porcelain)" ]; then
-    echo "❌ 错误: 工作目录不干净，请先提交或暂存更改"
-    git status --short
-    exit 1
+    echo "⚠️ 警告: 工作目录不干净，正在自动暂存..."
+    git add .
 fi
 
-# 拉取最新代码
-echo "📥 拉取最新代码..."
-git pull origin develop
+# 1. 更新 package.json
+echo "📝 更新 package.json..."
+sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package.json
 
-# 创建发布分支
-echo "🌿 创建发布分支: $RELEASE_BRANCH"
-git checkout -b "$RELEASE_BRANCH"
+# 2. 更新 Cargo.toml (第一行出现的 version)
+echo "📝 更新 src-tauri/Cargo.toml..."
+sed -i "0,/version = \".*\"/s//version = \"$VERSION\"/" src-tauri/Cargo.toml
 
-# 更新版本号（如果需要）
-echo "📝 更新版本号到 $VERSION..."
-# 这里可以添加更新 package.json 版本号的逻辑
+# 3. 更新 tauri.conf.json
+echo "📝 更新 src-tauri/tauri.conf.json..."
+sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json
 
-# 提交发布准备
-echo "💾 提交发布准备..."
+# 4. 执行版本更新辅助脚本 (更新 UI 中的版本文字)
+if [ -f "scripts/update-version.js" ]; then
+    echo "📝 执行 update-version.js..."
+    node scripts/update-version.js $VERSION
+fi
+
+# 5. 提交并打标签
+echo "💾 提交更改并创建标签 $TAG..."
 git add .
-git commit -m "chore: 准备发布 $TAG"
-
-# 推送到远程
-echo "🚀 推送到远程仓库..."
-git push origin "$RELEASE_BRANCH"
+git commit -m "chore: release $TAG" || echo "没有可提交的内容"
+git tag -a "$TAG" -m "Release $TAG"
 
 echo ""
-echo "✅ 发布分支创建完成!"
-echo ""
-echo "📋 接下来的步骤:"
-echo "1. 在 GitHub 上创建 Pull Request: $RELEASE_BRANCH → main"
-echo "2. 进行代码审查"
-echo "3. 合并到 main 分支"
-echo "4. 创建 tag: git tag -a $TAG -m \"发布版本 $TAG\""
-echo "5. 推送 tag: git push origin $TAG"
-echo "6. GitHub Actions 将自动构建和发布"
-echo ""
-echo "🔗 发布分支: $RELEASE_BRANCH"
-echo "🏷️  Tag: $TAG"
-echo ""
-echo "🎉 发布流程已启动!" 
+echo "✅ 本地准备完成!"
+echo "--------------------------------------"
+echo "下一步请执行以下命令推送云端构建:"
+echo "git push origin $CURRENT_BRANCH && git push origin $TAG"
+echo "git push github $CURRENT_BRANCH && git push github $TAG"
+echo "--------------------------------------"

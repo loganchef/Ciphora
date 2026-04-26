@@ -1,6 +1,6 @@
 [package]
 name = "ciphora"
-version = "2.0.10"
+version = "2.0.11"
 description = "Ciphora - 安全密码管理器"
 authors = ["loganchef <cubo@binrc.com>"]
 license = "MIT"

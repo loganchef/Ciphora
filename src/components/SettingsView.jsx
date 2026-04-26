@@ -56,6 +56,20 @@ const defaultSettings = {
 const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate }) => {
     const { t, i18n } = useTranslation();
     const [activeSection, setActiveSection] = useState('general');
+    const [appInfo, setAppInfo] = useState({ version: '2.0.10', name: 'Ciphora' });
+
+    // 获取应用信息 (版本号)
+    useEffect(() => {
+        const fetchInfo = async () => {
+            try {
+                const info = await window.api.getAppInfo();
+                if (info) setAppInfo(info);
+            } catch (err) {
+                console.error('Failed to fetch app info:', err);
+            }
+        };
+        fetchInfo();
+    }, []);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [dialogConfig, setDialogConfig] = useState({
         isOpen: false,
@@ -794,7 +808,7 @@ const SettingsView = ({ onLogout, settings: initialSettings, onSettingsUpdate })
                                 <span>{t('settings.donation.sponsor')}</span>
                             </a>
                             <div className="text-center pt-1 border-t border-gray-50 mt-2">
-                                <p className="text-[10px] text-gray-400 font-medium">Ciphora v2.0.10 | MIT License</p>
+                                <p className="text-[10px] text-gray-400 font-medium">{appInfo.name} v{appInfo.version} | MIT License</p>
                             </div>
                         </div>
                     </div>
