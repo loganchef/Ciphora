@@ -205,11 +205,15 @@ export default function CimbarQRCode({ data, filename = "vault.ciphora", classNa
         return () => clearTimeout(timer);
     }, [data, filename, densityMode, startEncode]);
 
-    // 计算录制时长估算
+    // 计算录制时长估算 (增加冗余量以防止丢包)
     const calcEstimatedSeconds = useCallback(() => {
         if (!data) return 10;
-        const densityFactor = densityMode === "4c" ? 2.0 : 4.0;
-        return Math.max(5, Math.ceil((data.length / (800 * 12.5)) * densityFactor) + 3);
+        // 增加更保守的估算逻辑
+        // BU 模式约 8KB/s, 4C 模式约 12KB/s
+        const bytesPerSecond = densityMode === "4c" ? 10000 : 6000;
+        const baseSeconds = Math.ceil(data.length / bytesPerSecond);
+        // 基础时间 + 5秒启动缓冲 + 20% 冗余
+        return Math.max(10, Math.ceil(baseSeconds * 1.2) + 5);
     }, [data, densityMode]);
 
     const stopRecording = useCallback(() => {

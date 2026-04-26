@@ -1,6 +1,6 @@
 {
   "name": "ciphora",
-  "version": "2.0.8",  "type": "module",
+  "version": "2.0.9",  "type": "module",
   "description": "Ciphora - 安全密码管理器，支持MFA、Base64数据存储和加密备份",
   "scripts": {
     "dev": "vite",
@@ -36,6 +36,7 @@
     "@tauri-apps/cli": "^2.0.0",
     "@vitejs/plugin-react": "^5.0.2",
     "autoprefixer": "^10.4.21",
+    "baseline-browser-mapping": "^2.10.22",
     "cross-env": "^10.0.0",
     "nodemon": "^3.1.10",
     "postcss": "^8.5.6",

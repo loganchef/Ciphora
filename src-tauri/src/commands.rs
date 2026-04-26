@@ -480,6 +480,19 @@ pub async fn import_cimbar_payload(
     import_export::import_cimbar_payload(data, share_password_set, share_password, master_password, app, state).await
 }
 
+/// 用途: 预处理 Cimbar 导入（解密并返回预览）; 输入: 数据与分享密码; 输出: 解密后的密码列表。
+#[tauri::command]
+pub async fn prepare_cimbar_import(
+    data: String,
+    share_password_set: bool,
+    share_password: Option<String>,
+    master_password: String,
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    import_export::prepare_cimbar_import(data, share_password_set, share_password, master_password, app, state).await
+}
+
 
 
 

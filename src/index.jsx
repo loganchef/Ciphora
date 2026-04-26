@@ -18,29 +18,23 @@ window.addEventListener('keydown', (e) => {
     }
 }, true); // 使用捕获阶段优先处理
 
-const renderApp = async () => {
-    // 尝试获取系统语言并初始化 i18n
-    try {
-        if (window.api && window.api.getSystemLocale) {
-            const locale = await window.api.getSystemLocale();
-            console.log('System locale detected:', locale);
-            if (locale) {
-                // 如果本地存储没有设置语言，则使用系统语言
-                if (!localStorage.getItem('i18nextLng')) {
-                    await i18n.changeLanguage(locale);
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Failed to initialize language from system:', error);
-    }
-
+const renderApp = () => {
     const root = ReactDOM.createRoot(document.getElementById('app'));
     root.render(
         <React.StrictMode>
             <App />
         </React.StrictMode>
     );
+
+    // 异步获取语言，不阻塞首屏渲染
+    if (window.api && window.api.getSystemLocale) {
+        window.api.getSystemLocale().then(locale => {
+            console.log('System locale detected:', locale);
+            if (locale && !localStorage.getItem('i18nextLng')) {
+                i18n.changeLanguage(locale);
+            }
+        }).catch(err => console.error('Failed to get locale:', err));
+    }
 };
 
 renderApp(); 

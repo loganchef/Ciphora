@@ -93,6 +93,7 @@ pub fn run() {
             move_passwords_to_group,
             increment_usage_count,
             import_cimbar_payload,
+            prepare_cimbar_import,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

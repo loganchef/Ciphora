@@ -43,6 +43,9 @@ const getMasterPassword = () => {
 
 // 完整的 Tauri API 封装，兼容 Electron API
 export const tauriAPI = {
+  // 暴露原始 invoke 接口，供组件直接调用后端命令
+  invoke,
+
   // ==================== 认证相关 ====================
   async checkInitializationStatus() {
     try {
