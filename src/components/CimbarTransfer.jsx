@@ -145,15 +145,23 @@ export default function CimbarTransfer({ onClose, onRefresh, passwords = [], vis
             // 核心修复：如果是密码本负载，开启导入预览
             try {
                 setMessage(t('common.loading'));
-                const analysis = await window.api.invoke('analyze_import_data', {
+                const response = await window.api.invoke('analyze_import_data', {
                     passwords: data,
                     masterPassword: window.__masterPassword || ''
                 });
-                
+
+                // 后端返回结构: { success, requiresPreview, analysis: { total, new, conflicts, existing } }
+                const analysis = response?.analysis || {};
+                const conflicts = analysis.conflicts || [];
+                // 合并 new + conflicts.imported 重建完整展示列表，顺序：先冲突项再新增项
+                const conflictItems = conflicts.map(c => c.imported);
+                const newItems = analysis.new || [];
+                const allItems = [...conflictItems, ...newItems];
+
                 setImportPreview({
                     isOpen: true,
-                    data: data,
-                    conflicts: analysis.conflicts || []
+                    data: allItems.length > 0 ? allItems : data,
+                    conflicts,
                 });
                 setMessage("");
             } catch (err) {
